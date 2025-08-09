@@ -98,6 +98,13 @@ export default function ModelViewer() {
         const uv = (hit.uv ?? null) as THREE.Vector2 | null;
         const pt = hit.point;
 
+        // 🔎 TEMP LOG — remove after testing
+        console.log("hit", {
+          uv: uv ? [Number(uv.x.toFixed(3)), Number(uv.y.toFixed(3))] : null,
+          world: [Number(pt.x.toFixed(3)), Number(pt.y.toFixed(3)), Number(pt.z.toFixed(3))],
+          name: (hit.object as any).name || (hit.object as any).uuid,
+        });
+
         for (const m of overlayMats.current) {
           if (uv) m.uniforms.u_mouse.value.set(uv.x, uv.y);
           m.uniforms.u_mouseWorld.value.set(pt.x, pt.y, pt.z);
