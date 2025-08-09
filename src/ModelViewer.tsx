@@ -66,9 +66,6 @@ export default function ModelViewer() {
       
       // Force overlay to render on top with specific settings
       overlay.renderOrder = 1000;
-      overlay.frustumCulled = false;
-      overlay.matrixAutoUpdate = true;
-      overlay.visible = true;
       
       // Force shader material to be visible
       shaderMat.visible = true;
