@@ -80,6 +80,15 @@ export default function ModelViewer() {
       m.uniforms.u_mouseWorld.value.set(0, 0, 0);
     }
 
+    // Diagnostic settings for testing
+    for (const m of overlayMats.current) {
+      m.uniforms.u_useUV.value = 0.0;             // force world
+      m.uniforms.u_mouseWorld.value.set(0, 0, 0); // origin (centered model)
+      m.uniforms.u_intensity.value = 1.0;
+      m.uniforms.u_radius.value    = 0.65;        // bigger in world
+      m.uniforms.u_sigma.value     = 0.12;
+    }
+
     return root;
   }, [scene]);
 
