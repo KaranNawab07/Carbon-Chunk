@@ -20,30 +20,29 @@ function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
 
 export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
-
-  // Keep references to every overlay material so we can update time/mouse
   const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
 
-  // Animate time & autorotate
   useFrame((_, delta) => {
     for (const m of overlayMats.current) m.uniforms.u_time.value += delta;
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
-  // Pointer -> UV mapped to ALL overlays
+  // POINTER → update both UV-space and WORLD-space uniforms
   const onPointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!e.uv) return;
-    const x = e.uv.x, y = e.uv.y;
-    for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(x, y);
+    const uv = e.uv;
+    const wp = e.point; // world-space hit point
+
+    for (const m of overlayMats.current) {
+      if (uv) m.uniforms.u_mouse.value.set(uv.x, uv.y);
+      if (wp) m.uniforms.u_mouseWorld.value.set(wp.x, wp.y, wp.z);
+    }
   };
 
-  // Load & prep once
   const { scene } = useGLTF(MODEL_URL);
   const prepared = useMemo(() => {
     const root = scene.clone(true);
     centerAndScaleToUnit(root, 2.0);
 
-    // 1) Collect ONLY the original meshes (no overlay creation here)
     const targets: THREE.Mesh[] = [];
     root.traverse((child: any) => {
       if (child.isMesh && child.geometry && !child.userData.__overlayAdded) {
@@ -51,42 +50,27 @@ export default function ModelViewer() {
       }
     });
 
-    // 2) Create overlays in a separate pass
-    overlayMats.current = []; // reset (HMR-safe)
+    overlayMats.current = [];
     for (const mesh of targets) {
-      // Base must receive raycasts for e.uv
       mesh.raycast = THREE.Mesh.prototype.raycast;
 
-      // Fresh material per mesh (avoids clone recursion & shared-uniform issues)
       const mat = createOverlayRipple({
-        u_intensity: 0.45,
-        u_radius: 0.28,
-        u_size: 4.5,
-        u_speed: 0.55,
+        // keep these if you want the stronger debug visibility first run:
+        u_intensity: 0.55,
+        u_radius: 0.34,
         u_sigma: 0.08,
-        u_facetMix: 0.3,
-        u_rippleColor: new THREE.Color(1, 1, 1),
       }) as THREE.ShaderMaterial;
 
-      // If the mesh lacks UVs, use our fallback mapping
       const hasUV = !!mesh.geometry.attributes?.uv;
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
-
-      // Make overlay ignore pointer hits (so base mesh gets e.uv)
-      // @ts-ignore
-      mat.raycast = () => {};
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
       overlay.userData.__isOverlay = true;
       overlay.frustumCulled = mesh.frustumCulled;
       overlay.renderOrder = (mesh.renderOrder || 0) + 1;
 
-      // Critical: mark base so we don't add again on HMR
       mesh.userData.__overlayAdded = true;
-
-      // Add overlay as a child (inherits transforms) AFTER collection pass
       mesh.add(overlay);
-
       overlayMats.current.push(mat);
     }
 
