@@ -7,33 +7,7 @@
     <title>3D Model Viewer</title>
   </head>
   <body>
-    <div id="app">
-      <div class="header">
-        <h1>3D Model Viewer</h1>
-        <div class="controls">
-          <select id="modelSelect">
-            <option value="b6ae0504-48ae-4708-a8f3-619e3b46318e_textured_mesh.glb">Model 2</option>
-          </select>
-          <button id="resetCamera">Reset View</button>
-        </div>
-      </div>
-      <div id="viewer-container">
-        <canvas id="three-canvas"></canvas>
-        <div id="loading" class="loading hidden">
-          <div class="spinner"></div>
-          <p>Loading model...</p>
-        </div>
-        <div id="instructions" class="instructions">
-          <p>Loading 3D model...</p>
-          <div class="controls-info">
-            <p><strong>Controls:</strong></p>
-            <p>• Left click + drag: Rotate</p>
-            <p>• Right click + drag: Pan</p>
-            <p>• Scroll: Zoom</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

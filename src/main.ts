@@ -1,5 +1,8 @@
 import './style.css'
-import { ModelViewer } from './ModelViewer'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
 
-const modelViewer = new ModelViewer()
-modelViewer.init()
+ReactDOM.createRoot(document.getElementById('app')!).render(
+  React.createElement(App)
+)
