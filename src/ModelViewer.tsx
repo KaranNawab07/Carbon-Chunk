@@ -65,6 +65,11 @@ export default function ModelViewer() {
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
+      
+      // ⬇️ make sure the overlay never steals pointer events
+      overlay.raycast = () => {};
+      
+      // keep the rest
       overlay.userData.__isOverlay = true;
       overlay.frustumCulled = mesh.frustumCulled;
       overlay.renderOrder = (mesh.renderOrder || 0) + 1;
