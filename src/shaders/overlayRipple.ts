@@ -72,7 +72,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       return 1.0 - smoothstep(r - w, r + w, d);
     }
     float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = t * speed;
+      float rc = fract(t * speed) * 0.7;  // 0.7 ~= max UV distance to corner
       float x = (dist - rc) / max(sigma, 1e-4);
       float g = exp(-0.5 * x * x);
       float fw = fwidth(dist) * 1.5;
