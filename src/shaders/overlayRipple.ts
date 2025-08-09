@@ -20,10 +20,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_time:          { value: 0 },
     u_mouse:         { value: new THREE.Vector2(-10, -10) }, // hidden until hit
     u_mouseWorld:    { value: new THREE.Vector3(0, 0, 0) },
-    u_radius:        { value: 0.40 },     // generous defaults; tune later
-    u_sigma:         { value: 0.10 },
-    u_speed:         { value: 0.8 },
-    u_intensity:     { value: 1.0 },
+    u_radius:        { value: 0.26 },
+    u_sigma:         { value: 0.07 },
+    u_speed:         { value: 0.55 },
+    u_intensity:     { value: 0.34 },
     u_baseColor:     { value: new THREE.Color(0.10, 0.10, 0.10) },
     u_rippleColor:   { value: new THREE.Color(1.0, 1.0, 1.0) },
     u_worldRadiusMul:{ value: 2.8 },
