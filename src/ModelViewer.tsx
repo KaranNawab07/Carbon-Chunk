@@ -25,6 +25,7 @@ export default function ModelViewer() {
   const hitTargets = useRef<THREE.Mesh[]>([]);
   const lastUV = useRef<THREE.Vector2 | null>(null);
   const lastPt = useRef<THREE.Vector3 | null>(null);
+  const hideTimer = useRef<number | null>(null);
   const { gl, camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster()).current;
 
@@ -125,58 +126,79 @@ export default function ModelViewer() {
       raycaster.setFromCamera({ x, y }, camera);
       const hits = raycaster.intersectObjects(hitTargets.current, true);
 
-      console.log('Raycast hits:', hits.length);
+      // cancel any pending hide (we got activity)
+      if (hideTimer.current) {
+        window.clearTimeout(hideTimer.current);
+        hideTimer.current = null;
+      }
 
       if (hits.length) {
         const hit = hits[0];
         const uv = (hit.uv ?? null) as THREE.Vector2 | null;
         const pt = hit.point;
 
-        console.log('Hit UV:', uv?.x.toFixed(3), uv?.y.toFixed(3));
+        // remember last-known hit
+        if (uv) {
+          if (!lastUV.current) lastUV.current = new THREE.Vector2();
+          lastUV.current.set(uv.x, uv.y);
+        }
+        if (!lastPt.current) lastPt.current = new THREE.Vector3();
+        lastPt.current.copy(pt);
 
-        // remember last good values
-        if (uv) lastUV.current = uv.clone();
-        lastPt.current = pt.clone();
-
-        // set world point for all overlays (future-proof)
-        for (const m of overlayMats.current) {
-          if (lastPt.current) m.uniforms.u_mouseWorld.value.copy(lastPt.current);
+        // world point for all overlays
+        if (lastPt.current) {
+          for (const m of overlayMats.current) {
+            m.uniforms.u_mouseWorld.value.copy(lastPt.current);
+          }
         }
 
+        // set UV center on the hit mesh's overlay; others keep their last UV
         if (uv) {
-          // find overlay for whatever submesh was hit (ascend to the mesh we augmented)
           let base: THREE.Object3D | null = hit.object;
           while (base && !(base as any).isMesh) base = base.parent;
-          if (base) {
-            const overlay = base.children.find(
-              (c: any) => c.isMesh && c.material && c.material.uniforms
-            ) as THREE.Mesh | undefined;
-            if (overlay) {
-              (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
-            }
+          const overlay = base
+            ? (base.children.find(
+                (c: any) => c.isMesh && c.material && c.material.uniforms
+              ) as THREE.Mesh | undefined)
+            : undefined;
+
+          if (overlay) {
+            (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
           }
-          console.log('RIPPLE AT UV:', uv.x.toFixed(3), uv.y.toFixed(3));
-        } else if (lastUV.current) {
-          // no UV for this hit, keep the last UV on all overlays (prevents flicker)
+          // keep showing last UV (prevents flicker)
           for (const m of overlayMats.current) {
             m.uniforms.u_mouse.value.copy(lastUV.current);
           }
         }
+      } else {
+        // no hit this frame — DO NOT blank immediately.
+        // schedule a gentle hide in 250ms (user likely left the model)
+        if (!hideTimer.current) {
+          hideTimer.current = window.setTimeout(() => {
+            lastUV.current = null;
+            lastPt.current = null;
+            for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
+            hideTimer.current = null;
+          }, 250);
+        }
       }
-      // NO automatic hide here — keep last value so the ring remains visible
     };
     
-    const hide = () => {
+    const onLeave = () => {
+      if (hideTimer.current) { 
+        window.clearTimeout(hideTimer.current); 
+        hideTimer.current = null; 
+      }
       lastUV.current = null;
       lastPt.current = null;
       for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
     };
     
     el.addEventListener("pointermove", handler, { passive: true });
-    el.addEventListener("pointerleave", hide, { passive: true });
+    el.addEventListener("pointerleave", onLeave, { passive: true });
     return () => {
       el.removeEventListener("pointermove", handler);
-      el.removeEventListener("pointerleave", hide);
+      el.removeEventListener("pointerleave", onLeave);
     };
   }, [gl, camera, raycaster]);
 
