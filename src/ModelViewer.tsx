@@ -109,7 +109,7 @@ export default function ModelViewer() {
         const uv = hit.uv ?? null;
         const pt = hit.point;
 
-        console.log('Hit UV:', uv, 'Point:', pt);
+        console.log('Hit UV:', uv?.x.toFixed(3), uv?.y.toFixed(3));
 
         for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.copy(pt);
 
@@ -119,8 +119,15 @@ export default function ModelViewer() {
             (c: any) => c.isMesh && c.material && c.material.uniforms
           ) as THREE.Mesh | undefined;
 
-          if (overlay) (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
+          if (overlay) {
+            const mat = overlay.material as THREE.ShaderMaterial;
+            mat.uniforms.u_mouse.value.set(uv.x, uv.y);
+            console.log('Setting ripple at UV:', uv.x.toFixed(3), uv.y.toFixed(3));
+          }
         }
+      } else {
+        // Hide ripples when not hovering
+        for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
       }
     };
     el.addEventListener("pointermove", handler, { passive: true });
