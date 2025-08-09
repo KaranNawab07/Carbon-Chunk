@@ -46,11 +46,14 @@ export default function ModelViewer() {
       }
     });
 
+    console.log("[DEBUG] Found", targets.length, "meshes for raycasting");
+
     overlayMats.current = [];
     hitTargets.current = [];
 
     for (const mesh of targets) {
       mesh.raycast = THREE.Mesh.prototype.raycast; // ensure raycastable
+      mesh.visible = true; // ensure visible for raycasting
 
       const mat = createOverlayRipple() as THREE.ShaderMaterial;
       const hasUV = !!mesh.geometry.attributes?.uv;
@@ -71,6 +74,10 @@ export default function ModelViewer() {
       console.log("[overlay]", mesh.name || mesh.uuid, "hasUV=", hasUV);
     }
 
+    // Set hit targets immediately
+    hitTargets.current = targets;
+    console.log("[DEBUG] Hit targets set:", hitTargets.current.length);
+
     // 🔎 Diagnostic pulse (visible without moving the mouse). Remove after verifying.
     if (DIAG) {
       for (const m of overlayMats.current) {
@@ -90,14 +97,21 @@ export default function ModelViewer() {
   // Manual raycast from canvas to drive UV + world uniforms
   useEffect(() => {
     const el = gl.domElement;
+    console.log("[DEBUG] Setting up pointer event on canvas:", el);
 
     const handler = (ev: PointerEvent) => {
+      console.log("[DEBUG] Pointer move event triggered");
+      
       const rect = el.getBoundingClientRect();
       const x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      console.log("[DEBUG] Mouse coords:", { x, y }, "Hit targets:", hitTargets.current.length);
 
       raycaster.setFromCamera({ x, y }, camera);
-      const hits = raycaster.intersectObjects(hitTargets.current, true);
+      const hits = raycaster.intersectObjects(hitTargets.current, false);
+      
+      console.log("[DEBUG] Raycast hits:", hits.length);
 
       if (hits.length) {
         const hit = hits[0];
@@ -106,21 +120,24 @@ export default function ModelViewer() {
         
         console.log("[raycast] hit:", hit.object.name || hit.object.uuid, "uv:", uv, "point:", pt);
 
-        for (const m of overlayMats.current) {
-          if (uv) m.uniforms.u_mouse.value.set(uv.x, uv.y);
-          m.uniforms.u_mouseWorld.value.set(pt.x, pt.y, pt.z);
+        for (const mat of overlayMats.current) {
+          if (uv) mat.uniforms.u_mouse.value.set(uv.x, uv.y);
+          mat.uniforms.u_mouseWorld.value.set(pt.x, pt.y, pt.z);
           // Boost intensity on hover for debugging
-          m.uniforms.u_intensity.value = 3.0;
+          mat.uniforms.u_intensity.value = 3.0;
         }
       } else {
+        console.log("[DEBUG] No hits, resetting intensity");
         // Reset intensity when not hovering
-        for (const m of overlayMats.current) {
-          m.uniforms.u_intensity.value = 0.35;
+        for (const mat of overlayMats.current) {
+          mat.uniforms.u_intensity.value = 0.35;
         }
       }
     };
 
     el.addEventListener("pointermove", handler, { passive: true });
+    console.log("[DEBUG] Event listener added");
+    
     return () => el.removeEventListener("pointermove", handler);
   }, [gl, camera, raycaster]);
 
