@@ -78,8 +78,8 @@ export default function ModelViewer() {
       overlay.visible = true;
       
       // Force material to be visible
-      mat.visible = true;
-      mat.needsUpdate = true;
+      testMat.visible = true;
+      testMat.needsUpdate = true;
       
       console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
       console.log('Overlay position:', overlay.position);
