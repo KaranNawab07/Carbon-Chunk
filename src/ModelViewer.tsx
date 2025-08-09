@@ -41,6 +41,8 @@ export default function ModelViewer() {
       if (child.isMesh && child.geometry && !child.userData.__overlayAdded) baseMeshes.push(child);
     });
 
+    console.log('Found base meshes:', baseMeshes.length);
+
     overlayMats.current = [];
     hitTargets.current = [];
 
@@ -56,36 +58,41 @@ export default function ModelViewer() {
       mat.uniforms.u_intensity.value = 2.0; // much brighter
       mat.uniforms.u_speed.value = 2.0;     // expansion speed
       
-      console.log('Created ripple overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
-
       const overlay = new THREE.Mesh(mesh.geometry, mat);
       
-      // Copy transform from base mesh
+      // Copy all transform properties
       overlay.position.copy(mesh.position);
       overlay.rotation.copy(mesh.rotation);
       overlay.scale.copy(mesh.scale);
-      overlay.matrix.copy(mesh.matrix);
-      overlay.matrixWorld.copy(mesh.matrixWorld);
+      overlay.quaternion.copy(mesh.quaternion);
+      overlay.updateMatrix();
       
       // Disable raycasting for overlay
       overlay.raycast = () => {};
       
-      // Force overlay to render on top
+      // Force overlay to render on top with specific settings
       overlay.renderOrder = 1000;
       overlay.frustumCulled = false;
+      overlay.matrixAutoUpdate = true;
+      overlay.visible = true;
+      
+      console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
+      console.log('Overlay position:', overlay.position);
+      console.log('Overlay visible:', overlay.visible);
+      console.log('Material transparent:', mat.transparent);
 
       mesh.userData.__overlayAdded = true;
       
-      // Add overlay to the same parent as the mesh, not as a child
-      if (mesh.parent) {
-        mesh.parent.add(overlay);
-      } else {
-        root.add(overlay);
-      }
+      // Add overlay directly to root to ensure it's in the scene
+      root.add(overlay);
 
       overlayMats.current.push(mat);
       hitTargets.current.push(mesh);
     }
+    
+    console.log('Created overlays:', overlayMats.current.length);
+    console.log('Root children after overlay creation:', root.children.length);
+    
     return root;
   }, [scene]);
 
