@@ -25,8 +25,11 @@ function App() {
         }}>
           3D Model Viewer with Ripple Effects
         </h1>
-        <div style={{ color: '#64748b', fontSize: '0.875rem' }}>
-          Hover over the model to see ripple effects
+        <div style={{ color: '#64748b', fontSize: '0.875rem', textAlign: 'right' }}>
+          <div>Hover over the model to see ripple effects</div>
+          <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            Debug: Press B (bbox), N (normals), R (reset rotation)
+          </div>
         </div>
       </div>
       
