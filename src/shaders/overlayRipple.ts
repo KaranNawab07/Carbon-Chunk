@@ -73,6 +73,15 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
         gl_FragColor = vec4(1.0, 0.0, 0.0, 0.8);
         return; 
       }
+      
+      if (u_mode == 4) {
+        // Raw ring diagnostic
+        vec2 diff = vUv - vec2(0.5, 0.5);
+        float dist = length(diff);
+        float ring = 1.0 - smoothstep(u_radius - u_sigma, u_radius + u_sigma, dist);
+        gl_FragColor = vec4(1.0, 1.0, 0.0, ring * u_intensity);
+        return;
+      }
 
       // Hide if mouse is off-screen
       if (u_mouse.x < 0.0 || u_mouse.y < 0.0) {
@@ -85,10 +94,9 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       float dist = length(diff);
       
       // Create expanding ring
-      float t = u_time;
       float rc = fract(u_time * u_speed) * 0.7;
       float ringRadius = rc * u_radius;
-      float ringWidth = u_sigma * 2.0;
+      float ringWidth = u_sigma;
       
       // Ring intensity based on distance from ring edge
       float ringDist = abs(dist - ringRadius);
@@ -101,11 +109,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       float mask = 1.0 - smoothstep(u_radius - 0.05, u_radius, dist);
       
       // Calculate final intensity
-      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity * 2.0;
+      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity;
       
       // Mix base and ripple colors
       vec3 color = mix(u_baseColor, u_rippleColor, finalIntensity);
-      gl_FragColor = vec4(color, max(finalIntensity, 0.1));
+      gl_FragColor = vec4(color, finalIntensity);
     }
   `;
 
@@ -115,9 +123,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     fragmentShader: frag,
     transparent: true,
     depthTest: false,
-    depthWrite: false,
-    blending: THREE.NormalBlending,
-    side: THREE.DoubleSide,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
   });
 
   return mat as THREE.ShaderMaterial;

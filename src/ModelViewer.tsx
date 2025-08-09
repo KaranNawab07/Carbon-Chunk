@@ -52,56 +52,32 @@ export default function ModelViewer() {
     for (const mesh of baseMeshes) {
       mesh.raycast = THREE.Mesh.prototype.raycast;
       
-      // Temporarily make base mesh bright green to see if overlay is working
-      // Keep original material but make it slightly transparent
-      if (mesh.material) {
-        (mesh.material as any).transparent = true;
-        (mesh.material as any).opacity = 0.9;
-      }
-      
       // Create shader material with ripple effect
       const shaderMat = createOverlayRipple();
       
-      // Stronger defaults for better visibility
-      shaderMat.uniforms.u_intensity.value = 0.45;
-      shaderMat.uniforms.u_radius.value = 0.30;
-      shaderMat.uniforms.u_sigma.value = 0.08;
+      // Quick diagnostic - force visible ring
+      shaderMat.uniforms.u_mode.value = 4;     // raw ring
+      shaderMat.uniforms.u_speed.value = 0.0;  // freeze
+      shaderMat.uniforms.u_radius.value = 0.5;
+      shaderMat.uniforms.u_sigma.value = 0.1;
+      shaderMat.uniforms.u_intensity.value = 1.2;
       
       const overlay = new THREE.Mesh(mesh.geometry, shaderMat);
       
-      // Copy all transform properties
-      overlay.position.copy(mesh.position);
-      overlay.rotation.copy(mesh.rotation);
-      overlay.scale.copy(mesh.scale);
-      overlay.quaternion.copy(mesh.quaternion);
+      // Keep overlay glued to base surface
+      overlay.position.set(0, 0, 0);
       
-      // Offset the overlay MORE to ensure it's visible
-      const normal = new THREE.Vector3(0, 0, 1);
-      overlay.position.add(normal.multiplyScalar(0.1));
-      overlay.updateMatrix();
-      
-      // Disable raycasting for overlay
+      // Overlay should never intercept pointer events
       overlay.raycast = () => {};
-      
-      // Force overlay to render on top
-      overlay.renderOrder = 999;
-      overlay.frustumCulled = false;
-      
-      // Force shader material to be visible
-      shaderMat.visible = true;
-      shaderMat.needsUpdate = true;
+      overlay.renderOrder = 9999;
+      overlay.frustumCulled = mesh.frustumCulled;
       
       console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
-      console.log('Overlay position:', overlay.position);
-      console.log('Overlay visible:', overlay.visible);
-      console.log('Shader material:', shaderMat);
-      console.log('Shader uniforms:', shaderMat.uniforms);
-      console.log('Overlay geometry vertices:', overlay.geometry.attributes.position?.count);
 
       mesh.userData.__overlayAdded = true;
       
-      // Add overlay directly to root to ensure it's in the scene
-      root.add(overlay);
+      // Add overlay as child of the mesh
+      mesh.add(overlay);
 
       // Store the shader material
       overlayMats.current.push(shaderMat);
