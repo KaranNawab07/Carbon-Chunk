@@ -59,13 +59,17 @@ export default function ModelViewer() {
       overlay.rotation.copy(mesh.rotation);
       overlay.scale.copy(mesh.scale);
       overlay.quaternion.copy(mesh.quaternion);
+      
+      // Slightly offset the overlay to ensure it's visible
+      overlay.position.add(new THREE.Vector3(0, 0, 0.001));
       overlay.updateMatrix();
       
       // Disable raycasting for overlay
       overlay.raycast = () => {};
       
-      // Force overlay to render on top with specific settings
-      overlay.renderOrder = 1000;
+      // Force overlay to render on top
+      overlay.renderOrder = 999;
+      overlay.frustumCulled = false;
       
       // Force shader material to be visible
       shaderMat.visible = true;

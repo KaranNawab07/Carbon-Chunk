@@ -114,11 +114,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     vertexShader: vert,
     fragmentShader: frag,
     transparent: true,
-    depthTest: true,
+    depthTest: false,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     side: THREE.DoubleSide,
-    opacity: 1.0,
   });
 
   return mat as THREE.ShaderMaterial;
