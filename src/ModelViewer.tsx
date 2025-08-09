@@ -49,6 +49,9 @@ export default function ModelViewer() {
     for (const mesh of baseMeshes) {
       mesh.raycast = THREE.Mesh.prototype.raycast;
       
+      // Temporarily make base mesh bright green to see if overlay is working
+      mesh.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+      
       // Create shader material with ripple effect
       const shaderMat = createOverlayRipple();
       
@@ -60,8 +63,9 @@ export default function ModelViewer() {
       overlay.scale.copy(mesh.scale);
       overlay.quaternion.copy(mesh.quaternion);
       
-      // Slightly offset the overlay to ensure it's visible
-      overlay.position.add(new THREE.Vector3(0, 0, 0.001));
+      // Offset the overlay MORE to ensure it's visible
+      const normal = new THREE.Vector3(0, 0, 1);
+      overlay.position.add(normal.multiplyScalar(0.1));
       overlay.updateMatrix();
       
       // Disable raycasting for overlay
@@ -78,8 +82,8 @@ export default function ModelViewer() {
       console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
       console.log('Overlay position:', overlay.position);
       console.log('Overlay visible:', overlay.visible);
-      console.log('Material transparent:', shaderMat.transparent);
-      console.log('Material visible:', shaderMat.visible);
+      console.log('Shader material:', shaderMat);
+      console.log('Shader uniforms:', shaderMat.uniforms);
       console.log('Overlay geometry vertices:', overlay.geometry.attributes.position?.count);
 
       mesh.userData.__overlayAdded = true;

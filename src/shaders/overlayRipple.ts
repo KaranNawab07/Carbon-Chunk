@@ -63,6 +63,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     uniform int   u_mode;
 
     void main(){
+      // Force bright magenta for debugging - this should ALWAYS be visible
+      gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+      return;
+      
       // Debug modes
       if (u_mode == 1) { 
         gl_FragColor = vec4(vUv, 0.0, 1.0); 
