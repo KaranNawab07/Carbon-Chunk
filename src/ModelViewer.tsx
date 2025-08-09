@@ -139,13 +139,23 @@ export default function ModelViewer() {
     if (!USE_DEBUG_KEYS) return;
     const onKey = (e: KeyboardEvent) => {
       const k = e.key;
+      console.log('Key pressed:', k, 'Overlay materials:', overlayMats.current.length);
       if (!overlayMats.current.length) return;
-      if (k === "1") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 1);
-      if (k === "2") { overlayMats.current.forEach(m => { m.uniforms.u_mode.value = 2; m.uniforms.u_mouse.value.set(0.5,0.5); }); }
-      if (k === "3") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0);
-      if (k === "4") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 4);
-      if (k === "5") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 5);
-      if (k === "6") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 6);
+      if (k === "1") {
+        console.log('Setting mode 1 (UV debug)');
+        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 1);
+      }
+      if (k === "2") {
+        console.log('Setting mode 2 (Red debug)');
+        overlayMats.current.forEach(m => {
+          m.uniforms.u_mode.value = 2;
+          m.uniforms.u_mouse.value.set(0.5, 0.5);
+        });
+      }
+      if (k === "3") {
+        console.log('Setting mode 0 (Ripple)');
+        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
