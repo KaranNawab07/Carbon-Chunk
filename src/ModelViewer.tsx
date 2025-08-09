@@ -49,17 +49,10 @@ export default function ModelViewer() {
     for (const mesh of baseMeshes) {
       mesh.raycast = THREE.Mesh.prototype.raycast;
       
-      // Create a simple test material first
-      const testMat = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide,
-        depthTest: false,
-        depthWrite: false
-      });
+      // Create shader material with ripple effect
+      const shaderMat = createOverlayRipple();
       
-      const overlay = new THREE.Mesh(mesh.geometry, testMat);
+      const overlay = new THREE.Mesh(mesh.geometry, shaderMat);
       
       // Copy all transform properties
       overlay.position.copy(mesh.position);
@@ -77,15 +70,15 @@ export default function ModelViewer() {
       overlay.matrixAutoUpdate = true;
       overlay.visible = true;
       
-      // Force material to be visible
-      testMat.visible = true;
-      testMat.needsUpdate = true;
+      // Force shader material to be visible
+      shaderMat.visible = true;
+      shaderMat.needsUpdate = true;
       
       console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
       console.log('Overlay position:', overlay.position);
       console.log('Overlay visible:', overlay.visible);
-      console.log('Material transparent:', testMat.transparent);
-      console.log('Material visible:', testMat.visible);
+      console.log('Material transparent:', shaderMat.transparent);
+      console.log('Material visible:', shaderMat.visible);
       console.log('Overlay geometry vertices:', overlay.geometry.attributes.position?.count);
 
       mesh.userData.__overlayAdded = true;
@@ -93,8 +86,8 @@ export default function ModelViewer() {
       // Add overlay directly to root to ensure it's in the scene
       root.add(overlay);
 
-      // Store the test material for now
-      overlayMats.current.push(testMat as any);
+      // Store the shader material
+      overlayMats.current.push(shaderMat);
       hitTargets.current.push(mesh);
     }
     
