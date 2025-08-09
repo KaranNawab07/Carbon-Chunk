@@ -48,6 +48,22 @@ export default function ModelViewer() {
       mesh.raycast = THREE.Mesh.prototype.raycast;
       const mat = createOverlayRipple();
       mat.uniforms.u_useUV.value = mesh.geometry.attributes?.uv ? 1.0 : 0.0;
+      
+      // FORCE ring mode aggressively
+      mat.uniforms.u_mode.value = 4;
+      mat.uniforms.u_mouse.value.set(0.5, 0.5);
+      mat.uniforms.u_radius.value = 0.8;
+      mat.uniforms.u_sigma.value = 0.2;
+      mat.uniforms.u_intensity.value = 5.0;
+      mat.uniforms.u_speed.value = 0.5;
+      
+      console.log('Created overlay with mode:', mat.uniforms.u_mode.value);
+      console.log('Ring settings:', {
+        radius: mat.uniforms.u_radius.value,
+        sigma: mat.uniforms.u_sigma.value,
+        intensity: mat.uniforms.u_intensity.value,
+        mouse: mat.uniforms.u_mouse.value
+      });
 
       // AGGRESSIVE DIAGNOSTICS - make ring impossible to miss
       mat.uniforms.u_mode.value = 4;        // raw ring mode
