@@ -5,7 +5,7 @@ import { Html, useGLTF, Environment } from "@react-three/drei";
 import { createOverlayRipple } from "./shaders/overlayRipple";
 
 const MODEL_URL = "/model.glb";
-const USE_DEBUG_KEYS = true; // press 1..6 like the plain Three test
+const USE_DEBUG_KEYS = true; // 1..6 modes (like the sanity test)
 
 function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
   const box = new THREE.Box3().setFromObject(object);
@@ -26,13 +26,11 @@ export default function ModelViewer() {
   const { gl, camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster()).current;
 
-  // drive time + autorotate
   useFrame((_, delta) => {
     for (const m of overlayMats.current) m.uniforms.u_time.value += delta;
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
-  // load GLB
   const { scene } = useGLTF(MODEL_URL);
   const prepared = useMemo(() => {
     const root = scene.clone(true);
@@ -48,29 +46,15 @@ export default function ModelViewer() {
     overlayMats.current = [];
     hitTargets.current = [];
 
-    console.log(`[diag] meshes found: ${baseMeshes.length}`);
-
-    // add overlay child per mesh (keeps original materials)
     for (const mesh of baseMeshes) {
-      mesh.raycast = THREE.Mesh.prototype.raycast; // ensure raycastable
-
-      const hasUV = !!mesh.geometry.attributes?.uv;
-      console.log(`[diag] mesh has UV: ${hasUV}`);
+      mesh.raycast = THREE.Mesh.prototype.raycast;
 
       const mat = createOverlayRipple();
-      // SUPER aggressive diagnostics - should be impossible to miss
-      mat.uniforms.u_mode.value = 0;        // normal ripple mode
-      mat.uniforms.u_speed.value = 0.55;    // smooth animation
-      mat.uniforms.u_radius.value = 0.26;   // subtle radius
-      mat.uniforms.u_sigma.value = 0.07;    // thin ring
-      mat.uniforms.u_intensity.value = 0.34; // subtle intensity
-
-      // your model has UVs — keep UV mode
-      mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
+      mat.uniforms.u_useUV.value = mesh.geometry.attributes?.uv ? 1.0 : 0.0;
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
-      overlay.raycast = () => {};     // never intercept pointer
-      overlay.renderOrder = 9999;     // draw after base
+      overlay.raycast = () => {};
+      overlay.renderOrder = 9999;
       overlay.frustumCulled = mesh.frustumCulled;
 
       mesh.userData.__overlayAdded = true;
@@ -83,10 +67,9 @@ export default function ModelViewer() {
     return root;
   }, [scene]);
 
-  // manual raycast from the canvas (bullet-proof cursor -> UVs)
+  // Manual canvas raycast
   useEffect(() => {
     const el = gl.domElement;
-
     const handler = (ev: PointerEvent) => {
       if (hitTargets.current.length === 0) return;
 
@@ -95,25 +78,21 @@ export default function ModelViewer() {
       const y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera({ x, y }, camera);
-
       const hits = raycaster.intersectObjects(hitTargets.current, true);
 
-      // hide UV ripple on all overlays by default
+      // hide by default
       for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
 
       if (hits.length) {
         const hit = hits[0];
         const uv = hit.uv ?? null;
         const pt = hit.point;
-        
-        console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
 
-        // world point for all overlays (in case you toggle world mode later)
+        // world point for all overlays (future-proof)
         for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.copy(pt);
 
-        // set UV center on the hit mesh only
         if (uv) {
-          // find overlay material attached to that base mesh
+          // set UV center only on the hit mesh's overlay
           const base = hit.object as THREE.Mesh;
           const overlay = base.children.find(
             (c: any) => c.isMesh && c.material && c.material.uniforms
@@ -130,18 +109,18 @@ export default function ModelViewer() {
     return () => el.removeEventListener("pointermove", handler);
   }, [gl, camera, raycaster]);
 
-  // optional: same debug keys as the standalone test (1..6)
+  // Debug keys 1..6 (same as the sanity test)
   useEffect(() => {
     if (!USE_DEBUG_KEYS) return;
     const onKey = (e: KeyboardEvent) => {
-      const key = e.key;
+      const k = e.key;
       if (!overlayMats.current.length) return;
-      if (key === "1") { overlayMats.current.forEach(m => m.uniforms.u_mode.value = 1); console.log('[mode] UV gradient'); }
-      if (key === "2") { overlayMats.current.forEach(m => { m.uniforms.u_mode.value = 2; m.uniforms.u_mouse.value.set(0.5,0.5); }); console.log('[mode] fixed pulse at center'); }
-      if (key === "3") { overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0); console.log('[mode] normal ripple'); }
-      if (key === "4") { overlayMats.current.forEach(m => m.uniforms.u_mode.value = 4); console.log('[mode] raw ring'); }
-      if (key === "5") { overlayMats.current.forEach(m => m.uniforms.u_mode.value = 5); console.log('[mode] area mask'); }
-      if (key === "6") { overlayMats.current.forEach(m => m.uniforms.u_mode.value = 6); console.log('[mode] area*ring'); }
+      if (k === "1") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 1);
+      if (k === "2") { overlayMats.current.forEach(m => { m.uniforms.u_mode.value = 2; m.uniforms.u_mouse.value.set(0.5,0.5); }); }
+      if (k === "3") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0);
+      if (k === "4") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 4);
+      if (k === "5") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 5);
+      if (k === "6") overlayMats.current.forEach(m => m.uniforms.u_mode.value = 6);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
