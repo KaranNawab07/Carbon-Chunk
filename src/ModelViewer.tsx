@@ -26,6 +26,8 @@ export default function ModelViewer() {
   const lastUV = useRef<THREE.Vector2 | null>(null);
   const lastPt = useRef<THREE.Vector3 | null>(null);
   const hideTimer = useRef<number | null>(null);
+  const builtOnce = useRef(false);
+  const cached = useRef<THREE.Object3D | null>(null);
   const { gl, camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster()).current;
 
@@ -36,6 +38,8 @@ export default function ModelViewer() {
 
   const { scene } = useGLTF(MODEL_URL);
   const prepared = useMemo(() => {
+    if (builtOnce.current && cached.current) return cached.current;  // skip duplicates
+
     const root = scene.clone(true);
     centerAndScaleToUnit(root, 2.0);
 
@@ -84,8 +88,11 @@ export default function ModelViewer() {
       hitTargets.current.push(mesh);
     }
     
-    console.log('Created overlays:', overlayMats.current.length);
-    console.log('Root children after overlay creation:', root.children.length);
+    builtOnce.current = true;
+    cached.current = root;
+
+    // better log:
+    console.log("Mesh children (overlay check):", baseMeshes.map(m => ({ name: m.name, children: m.children.length })));
     
     return root;
   }, [scene]);
