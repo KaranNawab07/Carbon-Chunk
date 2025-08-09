@@ -52,7 +52,10 @@ export default function ModelViewer() {
     hitTargets.current = [];
 
     for (const mesh of targets) {
-      mesh.raycast = THREE.Mesh.prototype.raycast; // ensure raycastable
+      // Ensure mesh is properly configured for raycasting
+      mesh.raycast = THREE.Mesh.prototype.raycast;
+      mesh.visible = true;
+      mesh.frustumCulled = false; // prevent culling issues
       mesh.visible = true; // ensure visible for raycasting
 
       const mat = createOverlayRipple() as THREE.ShaderMaterial;
@@ -68,11 +71,14 @@ export default function ModelViewer() {
       mesh.add(overlay);
 
       overlayMats.current.push(mat);
-      hitTargets.current.push(mesh);
 
       // Debug: log UV presence per mesh
       console.log("[overlay]", mesh.name || mesh.uuid, "hasUV=", hasUV);
     }
+
+    // Set hit targets after processing all meshes
+    hitTargets.current = targets;
+    console.log("[DEBUG] Final hit targets set:", hitTargets.current.length, "meshes");
 
     // Set hit targets immediately
     hitTargets.current = targets;
@@ -125,6 +131,14 @@ export default function ModelViewer() {
           mat.uniforms.u_mouseWorld.value.set(pt.x, pt.y, pt.z);
           // Boost intensity on hover for debugging
           mat.uniforms.u_intensity.value = 3.0;
+        }
+      } else {
+        console.log("[DEBUG] No hits, resetting intensity");
+        // Reset intensity when not hovering
+        for (const mat of overlayMats.current) {
+          mat.uniforms.u_intensity.value = 0.35;
+          // Boost intensity on hover for debugging
+          m.uniforms.u_intensity.value = 3.0;
         }
       } else {
         console.log("[DEBUG] No hits, resetting intensity");
