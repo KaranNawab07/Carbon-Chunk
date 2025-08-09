@@ -27,14 +27,10 @@ export default function ModelViewer() {
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
-  // POINTER → update both UV-space and WORLD-space uniforms
   const onPointerMove = (e: ThreeEvent<PointerEvent>) => {
-    const uv = e.uv;
-    const wp = e.point; // world-space hit point
-
     for (const m of overlayMats.current) {
-      if (uv) m.uniforms.u_mouse.value.set(uv.x, uv.y);
-      if (wp) m.uniforms.u_mouseWorld.value.set(wp.x, wp.y, wp.z);
+      if (e.uv) m.uniforms.u_mouse.value.set(e.uv.x, e.uv.y);
+      if (e.point) m.uniforms.u_mouseWorld.value.set(e.point.x, e.point.y, e.point.z);
     }
   };
 
@@ -79,14 +75,11 @@ export default function ModelViewer() {
       overlayMats.current.push(mat);
     }
 
-    // DEBUG: Force visible ripples for testing
+    // Optional subtle defaults for production
     for (const m of overlayMats.current) {
-      m.uniforms.u_useUV.value = 0.0;       // force WORLD
-      m.uniforms.u_intensity.value = 1.0;
-      m.uniforms.u_radius.value    = 0.6;   // world space is unit-ish after our scaling
-      m.uniforms.u_sigma.value     = 0.12;
-      // put the world pulse at the scene origin (we centered & scaled your model there)
-      m.uniforms.u_mouseWorld.value.set(0, 0, 0);
+      m.uniforms.u_intensity.value = 0.35;
+      m.uniforms.u_radius.value    = 0.26;
+      m.uniforms.u_sigma.value     = 0.06;
     }
 
     return root;
