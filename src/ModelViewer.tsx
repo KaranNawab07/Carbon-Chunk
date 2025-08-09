@@ -21,8 +21,8 @@ function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
 export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
 
-  // One shared overlay material instance for all meshes
-  const overlayMat = useMemo(
+  // Base template overlay (we will CLONE this per mesh)
+  const overlayTemplate = useMemo(
     () =>
       createOverlayRipple({
         u_intensity: 0.7,
@@ -34,23 +34,26 @@ export default function ModelViewer() {
       }),
     []
   );
-  const u = (overlayMat as any).__rippleUniforms;
+
+  // Registry of all overlay materials so we can update uniforms on every clone
+  const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
 
   // Animate time & autorotate
   useFrame((_, delta) => {
-    u.u_time.value += delta;
+    // advance time on ALL overlays
+    for (const m of overlayMats.current) {
+      m.uniforms.u_time.value += delta;
+    }
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
-  // Map cursor to UV space when available
+  // Map cursor to UV space when available and push to ALL overlays
   const onPointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (e.uv) {
-      u.u_mouse.value.set(e.uv.x, e.uv.y);
-    } else {
-      // fallback to screen coords (approximate)
-      const x = (e.pointer.x + 1) * 0.5;
-      const y = (e.pointer.y + 1) * 0.5;
-      u.u_mouse.value.set(x, y);
+    if (!e.uv) return;
+    const x = e.uv.x;
+    const y = e.uv.y;
+    for (const m of overlayMats.current) {
+      m.uniforms.u_mouse.value.set(x, y);
     }
   };
 
@@ -60,27 +63,36 @@ export default function ModelViewer() {
     const copy = scene.clone(true);
     centerAndScaleToUnit(copy, 2.0);
 
+    // clear registry (in case of HMR)
+    overlayMats.current = [];
+
     copy.traverse((child: any) => {
       if (child.isMesh && child.geometry) {
         // Ensure raycasting works for pointer events
         child.raycast = THREE.Mesh.prototype.raycast;
 
-        // Create an overlay mesh as a CHILD so it inherits transforms
-        const mat = overlayMat.clone();
-        // If the mesh has no UVs, tell shader to use fallback (world/triplanar-ish)
-        (mat as any).__rippleUniforms.u_useUV.value = child.geometry.attributes?.uv ? 1.0 : 0.0;
+        // Clone per-mesh overlay so we can set u_useUV individually
+        const mat = overlayTemplate.clone() as THREE.ShaderMaterial;
 
+        // IMPORTANT: clones have their own uniforms — set per-mesh flags here
+        const hasUV = !!child.geometry.attributes?.uv;
+        mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
+
+        // Track the clone so it receives time/mouse updates
+        overlayMats.current.push(mat);
+
+        // Create overlay mesh
         const overlay = new THREE.Mesh(child.geometry, mat);
         overlay.frustumCulled = child.frustumCulled;
         overlay.renderOrder = (child.renderOrder || 0) + 1;
 
-        // Add overlay (keeps original material visible underneath)
+        // Add overlay (keeps original PBR material intact underneath)
         child.add(overlay);
       }
     });
 
     return copy;
-  }, [scene, overlayMat]);
+  }, [scene, overlayTemplate]);
 
   return (
     <>
