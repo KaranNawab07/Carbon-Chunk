@@ -5,7 +5,7 @@ import { Html, useGLTF, Environment } from "@react-three/drei";
 import { createOverlayRipple } from "./shaders/overlayRipple";
 
 const MODEL_URL = "/model.glb";
-const DIAG = true; // set to false after you see the pulse once
+const DIAG = false; // set to false after you see the pulse once
 
 function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
   const box = new THREE.Box3().setFromObject(object);
