@@ -70,7 +70,14 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       }
       
       if (u_mode == 2) { 
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); 
+        // Show a bright red circle at mouse position for debugging
+        vec2 diff = vUv - u_mouse;
+        float dist = length(diff);
+        if (dist < 0.1) {
+          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        } else {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        }
         return; 
       }
 
@@ -98,9 +105,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       // Only show within max radius
       float mask = 1.0 - smoothstep(u_radius - 0.05, u_radius, dist);
       
-      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity;
+      // Make it MUCH more visible
+      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity * 5.0;
       
-      gl_FragColor = vec4(u_rippleColor * finalIntensity, finalIntensity);
+      // Force bright white for visibility
+      gl_FragColor = vec4(1.0, 1.0, 1.0, finalIntensity);
     }
   `;
 

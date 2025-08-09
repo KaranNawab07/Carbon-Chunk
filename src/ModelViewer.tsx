@@ -51,9 +51,9 @@ export default function ModelViewer() {
       
       // Set up ripple parameters
       mat.uniforms.u_mode.value = 0;        // normal ripple mode
-      mat.uniforms.u_radius.value = 0.3;    // ripple max radius
-      mat.uniforms.u_sigma.value = 0.05;    // ring thickness
-      mat.uniforms.u_intensity.value = 1.0; // brightness
+      mat.uniforms.u_radius.value = 0.5;    // larger ripple radius
+      mat.uniforms.u_sigma.value = 0.1;     // thicker ring
+      mat.uniforms.u_intensity.value = 2.0; // much brighter
       mat.uniforms.u_speed.value = 2.0;     // expansion speed
       
       console.log('Created ripple overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
