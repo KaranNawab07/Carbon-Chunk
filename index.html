@@ -1,13 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Model Viewer</title>
+    <title>GLB Ripple Sanity Test</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #000; }
+      canvas { display: block; }
+      #msg {
+        position: fixed; left: 12px; bottom: 12px; color: #9aa0a6;
+        font: 12px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI";
+        background: rgba(20,20,20,.5); padding: 8px 10px; border-radius: 8px;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="msg">Hover the model: ripple should follow the cursor. If not, tell me what the console logs.</div>
+    <script type="module" src="/main.js"></script>
   </body>
 </html>
