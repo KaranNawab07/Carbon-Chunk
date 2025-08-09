@@ -23,12 +23,12 @@ function App() {
           color: '#1e293b',
           margin: 0
         }}>
-          3D Model Viewer with Ripple Effects
+          3D Model Viewer with Overlay Ripple Effects
         </h1>
         <div style={{ color: '#64748b', fontSize: '0.875rem', textAlign: 'right' }}>
           <div>Hover over the model to see ripple effects</div>
           <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            Debug: Press B (bbox), N (normals), R (reset rotation)
+            Additive overlay preserves original materials
           </div>
         </div>
       </div>
