@@ -59,11 +59,12 @@ export default function ModelViewer() {
 
       // Fresh material per mesh (avoids clone recursion & shared-uniform issues)
       const mat = createOverlayRipple({
-        u_intensity: 0.7,
-        u_radius: 0.22,
-        u_size: 6.0,
-        u_speed: 0.65,
-        u_sharpness: 0.75,
+        u_intensity: 0.45,
+        u_radius: 0.28,
+        u_size: 4.5,
+        u_speed: 0.55,
+        u_sigma: 0.08,
+        u_facetMix: 0.3,
         u_rippleColor: new THREE.Color(1, 1, 1),
       }) as THREE.ShaderMaterial;
 
