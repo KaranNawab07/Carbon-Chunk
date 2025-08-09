@@ -81,18 +81,11 @@ export default function ModelViewer() {
 
     // DEBUG: Force visible ripples for testing
     for (const m of overlayMats.current) {
-      // Force UV mode first to ensure a visible test on most meshes
-      m.uniforms.u_useUV.value = 1.0;
-
-      // BIG + obvious settings (temporary)
+      m.uniforms.u_useUV.value = 0.0;       // force WORLD
       m.uniforms.u_intensity.value = 1.0;
-      m.uniforms.u_radius.value    = 0.45;
+      m.uniforms.u_radius.value    = 0.6;   // world space is unit-ish after our scaling
       m.uniforms.u_sigma.value     = 0.12;
-
-      // Put the pulse at center of UV space
-      m.uniforms.u_mouse.value.set(0.5, 0.5);
-
-      // Also set world center in case mesh has no UVs and you want to test world mode
+      // put the world pulse at the scene origin (we centered & scaled your model there)
       m.uniforms.u_mouseWorld.value.set(0, 0, 0);
     }
 
