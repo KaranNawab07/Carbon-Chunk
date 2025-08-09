@@ -59,12 +59,8 @@ export default function ModelViewer() {
       // Create shader material with ripple effect
       const shaderMat = createOverlayRipple();
       
-      // Set ripple mode with visible settings
-      shaderMat.uniforms.u_mode.value = 0;        // ripple mode
-      shaderMat.uniforms.u_speed.value = 2.0;     // animation speed
-      shaderMat.uniforms.u_radius.value = 0.30;   // ripple radius
-      shaderMat.uniforms.u_sigma.value = 0.08;    // ring thickness
-      shaderMat.uniforms.u_intensity.value = 0.45; // visibility
+      // Force world mode (no UVs)
+      shaderMat.uniforms.u_useUV.value = 0.0;
       
       const overlay = new THREE.Mesh(mesh.geometry, shaderMat);
       
