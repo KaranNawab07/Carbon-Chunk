@@ -13,9 +13,13 @@ export type RippleUniforms = {
   u_worldRadiusMul: number;      // scales radius to model scale
   u_useUV: number;               // will set to 0.0 in code (world mode)
   u_mode: number;                // debug modes if you still want them (0 default)
-  // NEW:
   u_triScale: number;            // size of crystalline facets (world units)
   u_triSharp: number;            // 0..1 facet sharpness
+  // NEW — blob controls
+  u_blobScale: number;           // higher → more blobby detail around cursor
+  u_blobThreshold: number;       // shape fill; 0.45–0.65 range is good
+  u_blobEdge: number;            // edge softness (anti-aliased)
+  u_blobPulse: number;           // subtle temporal wobble
 };
 
 export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
@@ -33,7 +37,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_useUV:         { value: 0.0 },   // FORCE WORLD MODE
     u_mode:          { value: 0 },
     u_triScale:      { value: 0.05 },  // facet size in world units
-    u_triSharp:      { value: 0.25 },  // 0 = soft, 1 = sharp facets
+    u_triSharp:      { value: 0.20 },  // 0 = soft, 1 = sharp facets
+    u_blobScale:     { value: 3.0 },   // higher → more blobby detail around cursor
+    u_blobThreshold: { value: 0.55 },  // shape fill; 0.45–0.65 range is good
+    u_blobEdge:      { value: 0.15 },  // edge softness (anti-aliased)
+    u_blobPulse:     { value: 0.12 },  // subtle temporal wobble
   };
 
   if (initial) for (const k in initial) if ((uniforms as any)[k]) (uniforms as any)[k].value = (initial as any)[k];
@@ -57,97 +65,126 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
 
     uniform float u_time;
     uniform vec3  u_mouseWorld;
-    uniform float u_radius;
-    uniform float u_sigma;
-    uniform float u_speed;
     uniform float u_intensity;
     uniform vec3  u_rippleColor;
-    uniform float u_worldRadiusMul;
-    uniform int   u_mode;
+    uniform float u_worldRadiusMul;   // still used for local attenuation (but not a visible circle)
 
-    uniform float u_triScale;   // facet size (world units)
-    uniform float u_triSharp;   // 0..1
+    uniform float u_triScale;         // facet modulation (world)
+    uniform float u_triSharp;
 
-    // --- helpers ---
-    float wrappedRingCenter(float t, float speed) {
-      return fract(t * speed) * 0.7; // keeps ring on visible range
+    uniform float u_blobScale;        // noise frequency around cursor
+    uniform float u_blobThreshold;    // fill threshold
+    uniform float u_blobEdge;         // edge softness
+    uniform float u_blobPulse;        // threshold wobble amount
+
+    uniform int   u_mode;             // keep your debug modes if you want
+
+    // --------- helpers: hash, value noise, fbm ----------
+    float hash21(vec2 p){
+      p = fract(p*vec2(123.34, 345.45));
+      p += dot(p, p+34.345);
+      return fract(p.x*p.y);
     }
 
-    float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = wrappedRingCenter(t, speed);
-      float x = (dist - rc) / max(sigma, 1e-4);
-      float g = exp(-0.5 * x * x);
-      float fw = fwidth(dist) * 1.5;
-      float g2 = exp(-0.5 * ((dist - rc) / max(sigma + fw, 1e-4)) * ((dist - rc) / max(sigma + fw, 1e-4)));
-      return mix(g, g2, 0.5);
+    // simple 2D value noise
+    float vnoise(in vec2 p){
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      float a = hash21(i);
+      float b = hash21(i + vec2(1.0, 0.0));
+      float c = hash21(i + vec2(0.0, 1.0));
+      float d = hash21(i + vec2(1.0, 1.0));
+      vec2 u = f*f*(3.0 - 2.0*f);
+      return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
     }
 
-    // Triangular (equilateral) grid signal, anti-aliased
+    // fbm with 4 octaves
+    float fbm(vec2 p){
+      float s = 0.0;
+      float a = 0.5;
+      for(int i=0;i<4;i++){
+        s += a * vnoise(p);
+        p *= 2.0;
+        a *= 0.5;
+      }
+      return s;
+    }
+
+    // Triangular facet signal (same spirit as before)
+    mat2 rot(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
     float triSignal(vec2 p, float freq){
-      // 3 directions at 0°, 120°, 240°
-      const float TAU = 6.28318530718;
-      float a0 = 0.0;
-      float a1 = 2.09439510239;  // 120°
-      float a2 = 4.18879020479;  // 240°
-      vec2 d0 = vec2(cos(a0), sin(a0));
-      vec2 d1 = vec2(cos(a1), sin(a1));
-      vec2 d2 = vec2(cos(a2), sin(a2));
-      float f0 = sin(dot(p, d0) * freq);
-      float f1 = sin(dot(p, d1) * freq);
-      float f2 = sin(dot(p, d2) * freq);
-      float m  = min(abs(f0), min(abs(f1), abs(f2)));
-      // derivative-based AA
-      float w0 = fwidth(dot(p, d0) * freq);
-      float w1 = fwidth(dot(p, d1) * freq);
-      float w2 = fwidth(dot(p, d2) * freq);
+      vec2 d0 = vec2(1.0, 0.0);
+      vec2 d1 = rot(2.09439510239) * d0; // 120°
+      vec2 d2 = rot(4.18879020479) * d0; // 240°
+      float f0 = abs(sin(dot(p, d0)*freq));
+      float f1 = abs(sin(dot(p, d1)*freq));
+      float f2 = abs(sin(dot(p, d2)*freq));
+      float m = min(f0, min(f1, f2));
+      float w0 = fwidth(dot(p, d0)*freq);
+      float w1 = fwidth(dot(p, d1)*freq);
+      float w2 = fwidth(dot(p, d2)*freq);
       float w  = max(w0, max(w1, w2));
-      // sharper facets with u_triSharp
       float edge = mix(0.55, 0.25, clamp(u_triSharp, 0.0, 1.0));
       return smoothstep(edge + w, edge - w, m);
     }
 
-    // Triplanar contribution of the triSignal
-    float triTriplanar(vec3 wp, vec3 wn, float scale, float freqMul){
+    // Triplanar facet blend (world space)
+    float triTriplanar(vec3 wp, vec3 wn, float scale){
       vec3 n = normalize(abs(wn) + 1e-5);
-      vec3 w = pow(n, vec3(4.0));            // bias projection by dominant normal axis
-      w /= (w.x + w.y + w.z);                 // normalize weights
+      vec3 w = pow(n, vec3(4.0)); // bias toward dominant axis
+      w /= (w.x + w.y + w.z);
+      float s = max(scale, 1e-4);
 
-      float s = max(scale, 1e-4);             // world -> UV-ish scale
-      vec2 px = wp.yz / s;                    // project to YZ (X-facing)
-      vec2 py = wp.xz / s;                    // project to XZ (Y-facing)
-      vec2 pz = wp.xy / s;                    // project to XY (Z-facing)
+      float vx = triSignal(wp.yz / s, 6.28318);
+      float vy = triSignal(wp.xz / s, 6.28318);
+      float vz = triSignal(wp.xy / s, 6.28318);
+      return vx * w.x + vy * w.y + vz * w.z;
+    }
 
-      float freq = 6.28318 * freqMul;         // ≈ 2π * frequency
-      float vx = triSignal(px, freq);
-      float vy = triSignal(py, freq);
-      float vz = triSignal(pz, freq);
-
-      return vx * w.x + vy * w.y + vz * w.z;  // weighted blend
+    // Triplanar FBM blob centered at cursor (no UVs)
+    float blobTriplanar(vec3 wp, vec3 wn, vec3 center, float scale){
+      vec3 p = (wp - center) * scale;        // localize around cursor, scaled
+      vec3 n = normalize(abs(wn) + 1e-5);
+      vec3 w = pow(n, vec3(4.0));
+      w /= (w.x + w.y + w.z);
+      // project to 3 planes and combine
+      float vx = fbm(p.yz);
+      float vy = fbm(p.xz);
+      float vz = fbm(p.xy);
+      return vx*w.x + vy*w.y + vz*w.z;
     }
 
     void main(){
-      // World-space ripple (no UVs)
+      // 1) Soft locality so the blob fades away with distance (not a hard circle)
       float distW = length(vWorldPos - u_mouseWorld);
-      float r     = u_radius * u_worldRadiusMul;
-      float area  = 1.0 - smoothstep(r - fwidth(distW)*2.0, r + fwidth(distW)*2.0, distW);
-      float ring  = gaussianRing(distW, u_sigma, u_time, u_speed);
+      float farR  = u_worldRadiusMul;               // ~ model-scaled locality
+      float soft  = 1.0 - smoothstep(farR*0.7, farR, distW);
 
-      // Geometric facet modulation in world space (no seams)
-      float facet = triTriplanar(vWorldPos, vWorldNormal, u_triScale, 1.0);
-      // soften facet participation slightly so it stays silky
+      // 2) Random blob via triplanar FBM around the cursor
+      float n = blobTriplanar(vWorldPos, vWorldNormal, u_mouseWorld, u_blobScale);
+
+      // 3) Subtle animated threshold (wobble) so the blob breathes
+      float pulse = u_blobPulse * sin(u_time*2.0 + n*6.28318);
+      float th = clamp(u_blobThreshold + pulse, 0.0, 1.0);
+
+      // 4) Edge smoothing (anti-aliased threshold)
+      float fw = fwidth(n) * 2.0 + 1e-5;
+      float blob = smoothstep(th - u_blobEdge - fw, th + u_blobEdge + fw, n);
+
+      // 5) Facet modulation (crystalline feel), kept subtle
+      float facet = triTriplanar(vWorldPos, vWorldNormal, u_triScale);
       facet = mix(1.0, facet, 0.35);
 
-      // Final amount
-      float amt = area * ring * facet * u_intensity;
+      // 6) Final amount
+      float amt = blob * facet * soft * u_intensity;
 
-      // Debug modes if you need them (optional)
-      if (u_mode == 4) { gl_FragColor = vec4(vec3(ring), 1.0); return; }
-      if (u_mode == 5) { gl_FragColor = vec4(vec3(area), 1.0); return; }
-      if (u_mode == 6) { gl_FragColor = vec4(vec3(area * ring), 1.0); return; }
+      // Debug if needed
+      if (u_mode == 4) { gl_FragColor = vec4(vec3(n), 1.0); return; }      // noise
+      if (u_mode == 5) { gl_FragColor = vec4(vec3(blob), 1.0); return; }   // thresholded blob
+      if (u_mode == 6) { gl_FragColor = vec4(vec3(soft), 1.0); return; }   // locality
 
-      // Additive neon overlay
-      vec3 addLight = u_rippleColor * amt;
-      gl_FragColor = vec4(addLight, amt);
+      // Additive "neon vein" overlay
+      gl_FragColor = vec4(u_rippleColor * amt, amt);
     }
   `;
 
