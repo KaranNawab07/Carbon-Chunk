@@ -20,10 +20,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_time:          { value: 0 },
     u_mouse:         { value: new THREE.Vector2(-10, -10) }, // hidden until hit
     u_mouseWorld:    { value: new THREE.Vector3(0, 0, 0) },
-    u_radius:        { value: 0.26 },
-    u_sigma:         { value: 0.07 },
-    u_speed:         { value: 0.55 },
-    u_intensity:     { value: 0.34 },
+    u_radius:        { value: 0.40 },     // generous defaults; tune later
+    u_sigma:         { value: 0.10 },
+    u_speed:         { value: 0.8 },
+    u_intensity:     { value: 1.0 },
     u_baseColor:     { value: new THREE.Color(0.10, 0.10, 0.10) },
     u_rippleColor:   { value: new THREE.Color(1.0, 1.0, 1.0) },
     u_worldRadiusMul:{ value: 2.8 },
@@ -72,7 +72,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       return 1.0 - smoothstep(r - w, r + w, d);
     }
     float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = fract(t * speed) * 0.7;
+      float rc = t * speed;
       float x = (dist - rc) / max(sigma, 1e-4);
       float g = exp(-0.5 * x * x);
       float fw = fwidth(dist) * 1.5;
