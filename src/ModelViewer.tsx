@@ -58,12 +58,13 @@ export default function ModelViewer() {
       console.log(`[diag] mesh has UV: ${hasUV}`);
 
       const mat = createOverlayRipple();
-      // Force-visible diagnostics (temporary)
-      mat.uniforms.u_mode.value = 4;     // raw ring
-      mat.uniforms.u_speed.value = 0.0;  // freeze
-      mat.uniforms.u_radius.value = 0.5;
-      mat.uniforms.u_sigma.value = 0.1;
-      mat.uniforms.u_intensity.value = 1.5;
+      // SUPER aggressive diagnostics - should be impossible to miss
+      mat.uniforms.u_mode.value = 4;        // raw ring
+      mat.uniforms.u_speed.value = 0.0;     // freeze
+      mat.uniforms.u_radius.value = 0.8;    // huge radius
+      mat.uniforms.u_sigma.value = 0.2;     // thick ring
+      mat.uniforms.u_intensity.value = 3.0; // super bright
+      mat.uniforms.u_mouse.value.set(0.5, 0.5); // always show at center
 
       // your model has UVs — keep UV mode
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
@@ -105,6 +106,8 @@ export default function ModelViewer() {
         const hit = hits[0];
         const uv = hit.uv ?? null;
         const pt = hit.point;
+        
+        console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
 
         console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
 
