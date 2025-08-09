@@ -222,6 +222,7 @@ export class ModelViewer {
   public init(): void {
     // Auto-load Model 2
     this.loadModel('b6ae0504-48ae-4708-a8f3-619e3b46318e_textured_mesh.glb')
+    this.hideInstructions()
     this.animate()
   }
 }
