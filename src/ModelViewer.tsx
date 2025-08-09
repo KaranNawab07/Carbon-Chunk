@@ -49,30 +49,14 @@ export default function ModelViewer() {
       const mat = createOverlayRipple();
       mat.uniforms.u_useUV.value = mesh.geometry.attributes?.uv ? 1.0 : 0.0;
       
-      // FORCE ring mode aggressively
-      mat.uniforms.u_mode.value = 4;
-      mat.uniforms.u_mouse.value.set(0.5, 0.5);
-      mat.uniforms.u_radius.value = 0.8;
-      mat.uniforms.u_sigma.value = 0.2;
-      mat.uniforms.u_intensity.value = 5.0;
-      mat.uniforms.u_speed.value = 0.5;
+      // Set up ripple parameters
+      mat.uniforms.u_mode.value = 0;        // normal ripple mode
+      mat.uniforms.u_radius.value = 0.3;    // ripple max radius
+      mat.uniforms.u_sigma.value = 0.05;    // ring thickness
+      mat.uniforms.u_intensity.value = 1.0; // brightness
+      mat.uniforms.u_speed.value = 2.0;     // expansion speed
       
-      console.log('Created overlay with mode:', mat.uniforms.u_mode.value);
-      console.log('Ring settings:', {
-        radius: mat.uniforms.u_radius.value,
-        sigma: mat.uniforms.u_sigma.value,
-        intensity: mat.uniforms.u_intensity.value,
-        mouse: mat.uniforms.u_mouse.value
-      });
-
-      // AGGRESSIVE DIAGNOSTICS - make ring impossible to miss
-      mat.uniforms.u_mode.value = 4;        // raw ring mode
-      mat.uniforms.u_mouse.value.set(0.5, 0.5); // center of UV
-      mat.uniforms.u_radius.value = 0.3;    // reasonable radius
-      mat.uniforms.u_sigma.value = 0.08;    // focused ring
-      mat.uniforms.u_intensity.value = 0.8; // visible but not overwhelming
-      mat.uniforms.u_speed.value = 0.6;     // smooth animation
-      console.log('Created overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
+      console.log('Created ripple overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
       overlay.raycast = () => {};
@@ -122,7 +106,7 @@ export default function ModelViewer() {
           if (overlay) {
             const mat = overlay.material as THREE.ShaderMaterial;
             mat.uniforms.u_mouse.value.set(uv.x, uv.y);
-            console.log('Setting ripple at UV:', uv.x.toFixed(3), uv.y.toFixed(3));
+            console.log('RIPPLE AT UV:', uv.x.toFixed(3), uv.y.toFixed(3));
           }
         }
       } else {

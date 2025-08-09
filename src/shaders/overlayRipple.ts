@@ -12,18 +12,18 @@ export type RippleUniforms = {
   u_rippleColor: THREE.Color;
   u_worldRadiusMul: number;
   u_useUV: number;
-  u_mode: number; // 0=normal, 1=UV gradient, 2=fixed pulse, 4=ring, 5=area, 6=area*ring
+  u_mode: number;
 };
 
 export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
   const uniforms = {
     u_time:          { value: 0 },
-    u_mouse:         { value: new THREE.Vector2(-10, -10) }, // hidden until hit
+    u_mouse:         { value: new THREE.Vector2(-10, -10) },
     u_mouseWorld:    { value: new THREE.Vector3(0, 0, 0) },
-    u_radius:        { value: 0.26 },
-    u_sigma:         { value: 0.07 },
-    u_speed:         { value: 0.55 },
-    u_intensity:     { value: 0.34 },
+    u_radius:        { value: 0.3 },
+    u_sigma:         { value: 0.05 },
+    u_speed:         { value: 2.0 },
+    u_intensity:     { value: 1.0 },
     u_baseColor:     { value: new THREE.Color(0.10, 0.10, 0.10) },
     u_rippleColor:   { value: new THREE.Color(1.0, 1.0, 1.0) },
     u_worldRadiusMul:{ value: 2.8 },
@@ -62,51 +62,45 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     uniform float u_useUV;
     uniform int   u_mode;
 
-    float radialMask(float d, float r){
-      float w = fwidth(d) * 2.0;
-      return 1.0 - smoothstep(r - w, r + w, d);
-    }
-
-    // Wrapped ring so it never "runs off" the mesh
-    float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = fract(t * speed) * 0.7;  // Animated expanding ring
-      float x = (dist - rc) / max(sigma, 1e-4);
-      float g = exp(-0.5 * x * x);
-      return g;
-    }
-
     void main(){
-      if (u_mode == 1) { gl_FragColor = vec4(vUv, 0.0, 1.0); return; } // UV gradient
-      vec2 center = (u_mode == 2) ? vec2(0.5) : u_mouse;
+      // Debug modes
+      if (u_mode == 1) { 
+        gl_FragColor = vec4(vUv, 0.0, 1.0); 
+        return; 
+      }
+      
+      if (u_mode == 2) { 
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); 
+        return; 
+      }
 
-      if (u_useUV > 0.5 && center.x >= 0.0) {
-        vec2 p = vUv - center;
-        float d = length(p);
-        float area = radialMask(d, u_radius);
-        float ring = gaussianRing(d, u_sigma, u_time, u_speed);
-        float amt  = area * ring * u_intensity;
-
-        if (u_mode == 4) { gl_FragColor = vec4(vec3(ring), 1.0); return; }
-        if (u_mode == 5) { gl_FragColor = vec4(vec3(area), 1.0); return; }
-        if (u_mode == 6) { gl_FragColor = vec4(vec3(area * ring), 1.0); return; }
-
-        // Additive overlay on top of your base material
-        gl_FragColor = vec4(u_rippleColor * amt, amt);
+      // Hide if mouse is off-screen
+      if (u_mouse.x < 0.0 || u_mouse.y < 0.0) {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
       }
 
-      // World fallback (kept for safety)
-      float d = length(vWorldPos - u_mouseWorld);
-      float r = u_radius * u_worldRadiusMul;
-      float area = 1.0 - smoothstep(r - fwidth(d)*2.0, r + fwidth(d)*2.0, d);
-      float ring = gaussianRing(d, u_sigma * 0.5, u_time, u_speed);
-      float amt  = area * ring * u_intensity;
-
-      if (u_mode == 4) { gl_FragColor = vec4(vec3(ring), 1.0); return; }
-      if (u_mode == 5) { gl_FragColor = vec4(vec3(area), 1.0); return; }
-      if (u_mode == 6) { gl_FragColor = vec4(vec3(area * ring), 1.0); return; }
-
-      gl_FragColor = vec4(u_rippleColor * amt, amt);
+      // Calculate distance from mouse position
+      vec2 diff = vUv - u_mouse;
+      float dist = length(diff);
+      
+      // Create expanding ring
+      float ringRadius = mod(u_time * u_speed, u_radius);
+      float ringWidth = u_sigma;
+      
+      // Ring intensity based on distance from ring edge
+      float ringDist = abs(dist - ringRadius);
+      float ringIntensity = 1.0 - smoothstep(0.0, ringWidth, ringDist);
+      
+      // Fade out as ring expands
+      float fadeFactor = 1.0 - (ringRadius / u_radius);
+      
+      // Only show within max radius
+      float mask = 1.0 - smoothstep(u_radius - 0.05, u_radius, dist);
+      
+      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity;
+      
+      gl_FragColor = vec4(u_rippleColor * finalIntensity, finalIntensity);
     }
   `;
 
