@@ -84,15 +84,11 @@ export default function ModelViewer() {
     // 3) 🔎 DIAGNOSTIC OVERRIDES (force a big pulse so you can see it)
     //    You should see a bright, wide pulse near UV center (0.5, 0.5).
     for (const m of overlayMats.current) {
-      // Try UV mode first:
-      m.uniforms.u_useUV.value = 1.0;                // force UV for the test
-      m.uniforms.u_mouse.value.set(0.5, 0.5);        // UV center
+      m.uniforms.u_useUV.value = 0.0;             // force WORLD test
+      m.uniforms.u_mouseWorld.value.set(0, 0, 0); // origin (we centered the model)
       m.uniforms.u_intensity.value = 1.0;            // strong
-      m.uniforms.u_radius.value    = 0.45;           // wide
+      m.uniforms.u_radius.value    = 0.65;        // bigger for world scale
       m.uniforms.u_sigma.value     = 0.12;           // thick
-
-      // Also set world center in case you switch to world test below
-      m.uniforms.u_mouseWorld.value.set(0, 0, 0);
     }
 
     return root;
