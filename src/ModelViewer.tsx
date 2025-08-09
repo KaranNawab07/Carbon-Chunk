@@ -50,7 +50,11 @@ export default function ModelViewer() {
       mesh.raycast = THREE.Mesh.prototype.raycast;
       
       // Temporarily make base mesh bright green to see if overlay is working
-      mesh.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+      // Keep original material but make it slightly transparent
+      if (mesh.material) {
+        (mesh.material as any).transparent = true;
+        (mesh.material as any).opacity = 0.9;
+      }
       
       // Create shader material with ripple effect
       const shaderMat = createOverlayRipple();

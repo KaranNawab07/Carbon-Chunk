@@ -63,10 +63,6 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     uniform int   u_mode;
 
     void main(){
-      // Force bright magenta for debugging - this should ALWAYS be visible
-      gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-      return;
-      
       // Debug modes
       if (u_mode == 1) { 
         gl_FragColor = vec4(vUv, 0.0, 1.0); 
@@ -74,15 +70,12 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       }
       
       if (u_mode == 2) { 
-        // Show bright red everywhere - force full opacity
         gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
         return; 
       }
 
-      // Hide if mouse is off-screen (but show some debug info)
+      // Hide if mouse is off-screen
       if (u_mouse.x < 0.0 || u_mouse.y < 0.0) {
-        // Show faint blue when mouse is off-screen to confirm shader is running
-        gl_FragColor = vec4(0.0, 0.0, 0.2, 0.3);
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
       }
@@ -105,11 +98,12 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       // Only show within max radius
       float mask = 1.0 - smoothstep(u_radius - 0.05, u_radius, dist);
       
-      // Make it MUCH more visible
-      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity * 5.0;
+      // Calculate final intensity
+      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity;
       
-      // Force bright white for visibility
-      gl_FragColor = vec4(1.0, 1.0, 1.0, finalIntensity);
+      // Mix base and ripple colors
+      vec3 color = mix(u_baseColor, u_rippleColor, finalIntensity);
+      gl_FragColor = vec4(color, finalIntensity * 0.8);
     }
   `;
 
