@@ -85,7 +85,9 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       float dist = length(diff);
       
       // Create expanding ring
-      float ringRadius = mod(u_time * u_speed, u_radius);
+      float t = u_time;
+      float rc = fract(t * u_speed) * 0.7;
+      float ringRadius = rc * u_radius;
       float ringWidth = u_sigma * 2.0;
       
       // Ring intensity based on distance from ring edge

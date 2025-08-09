@@ -23,6 +23,8 @@ export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
   const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
   const hitTargets = useRef<THREE.Mesh[]>([]);
+  const lastUV = useRef<THREE.Vector2 | null>(null);
+  const lastPt = useRef<THREE.Vector3 | null>(null);
   const { gl, camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster()).current;
 
@@ -58,6 +60,11 @@ export default function ModelViewer() {
       
       // Create shader material with ripple effect
       const shaderMat = createOverlayRipple();
+      
+      // Stronger defaults for better visibility
+      shaderMat.uniforms.u_intensity.value = 0.45;
+      shaderMat.uniforms.u_radius.value = 0.30;
+      shaderMat.uniforms.u_sigma.value = 0.08;
       
       const overlay = new THREE.Mesh(mesh.geometry, shaderMat);
       
@@ -120,32 +127,57 @@ export default function ModelViewer() {
 
       console.log('Raycast hits:', hits.length);
 
-      for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
-
       if (hits.length) {
         const hit = hits[0];
-        const uv = hit.uv ?? null;
+        const uv = (hit.uv ?? null) as THREE.Vector2 | null;
         const pt = hit.point;
 
         console.log('Hit UV:', uv?.x.toFixed(3), uv?.y.toFixed(3));
 
-        for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.copy(pt);
+        // remember last good values
+        if (uv) lastUV.current = uv.clone();
+        lastPt.current = pt.clone();
+
+        // set world point for all overlays (future-proof)
+        for (const m of overlayMats.current) {
+          if (lastPt.current) m.uniforms.u_mouseWorld.value.copy(lastPt.current);
+        }
 
         if (uv) {
-          // Update ALL overlay materials with the UV position
-          for (const mat of overlayMats.current) {
-            mat.uniforms.u_mouse.value.set(uv.x, uv.y);
+          // find overlay for whatever submesh was hit (ascend to the mesh we augmented)
+          let base: THREE.Object3D | null = hit.object;
+          while (base && !(base as any).isMesh) base = base.parent;
+          if (base) {
+            const overlay = base.children.find(
+              (c: any) => c.isMesh && c.material && c.material.uniforms
+            ) as THREE.Mesh | undefined;
+            if (overlay) {
+              (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
+            }
           }
           console.log('RIPPLE AT UV:', uv.x.toFixed(3), uv.y.toFixed(3));
-          console.log('Updated', overlayMats.current.length, 'overlay materials');
+        } else if (lastUV.current) {
+          // no UV for this hit, keep the last UV on all overlays (prevents flicker)
+          for (const m of overlayMats.current) {
+            m.uniforms.u_mouse.value.copy(lastUV.current);
+          }
         }
-      } else {
-        // Hide ripples when not hovering
-        for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
       }
+      // NO automatic hide here — keep last value so the ring remains visible
     };
+    
+    const hide = () => {
+      lastUV.current = null;
+      lastPt.current = null;
+      for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
+    };
+    
     el.addEventListener("pointermove", handler, { passive: true });
-    return () => el.removeEventListener("pointermove", handler);
+    el.addEventListener("pointerleave", hide, { passive: true });
+    return () => {
+      el.removeEventListener("pointermove", handler);
+      el.removeEventListener("pointerleave", hide);
+    };
   }, [gl, camera, raycaster]);
 
   useEffect(() => {
