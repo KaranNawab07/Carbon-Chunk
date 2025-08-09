@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Model Viewer</title>
+    <script type="module" crossorigin src="/assets/index-hnI1Ik-j.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C_Cf1Aoh.css">
+  </head>
+  <body>
+    <div id="app">
+      <div class="header">
+        <h1>3D Model Viewer</h1>
+        <div class="controls">
+          <select id="modelSelect">
+            <option value="b6ae0504-48ae-4708-a8f3-619e3b46318e_textured_mesh.glb">Model 2</option>
+          </select>
+          <button id="resetCamera">Reset View</button>
+        </div>
+      </div>
+      <div id="viewer-container">
+        <canvas id="three-canvas"></canvas>
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>Loading model...</p>
+        </div>
+        <div id="instructions" class="instructions">
+          <p>Loading 3D model...</p>
+          <div class="controls-info">
+            <p><strong>Controls:</strong></p>
+            <p>• Left click + drag: Rotate</p>
+            <p>• Right click + drag: Pan</p>
+            <p>• Scroll: Zoom</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
