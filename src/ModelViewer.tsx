@@ -59,12 +59,11 @@ export default function ModelViewer() {
 
       const mat = createOverlayRipple();
       // SUPER aggressive diagnostics - should be impossible to miss
-      mat.uniforms.u_mode.value = 4;        // raw ring
-      mat.uniforms.u_speed.value = 0.0;     // freeze
-      mat.uniforms.u_radius.value = 0.8;    // huge radius
-      mat.uniforms.u_sigma.value = 0.2;     // thick ring
-      mat.uniforms.u_intensity.value = 3.0; // super bright
-      mat.uniforms.u_mouse.value.set(0.5, 0.5); // always show at center
+      mat.uniforms.u_mode.value = 0;        // normal ripple mode
+      mat.uniforms.u_speed.value = 0.55;    // smooth animation
+      mat.uniforms.u_radius.value = 0.26;   // subtle radius
+      mat.uniforms.u_sigma.value = 0.07;    // thin ring
+      mat.uniforms.u_intensity.value = 0.34; // subtle intensity
 
       // your model has UVs — keep UV mode
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
@@ -107,8 +106,6 @@ export default function ModelViewer() {
         const uv = hit.uv ?? null;
         const pt = hit.point;
         
-        console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
-
         console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
 
         // world point for all overlays (in case you toggle world mode later)
