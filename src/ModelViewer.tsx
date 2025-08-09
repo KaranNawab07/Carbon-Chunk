@@ -137,14 +137,6 @@ export default function ModelViewer() {
         // Reset intensity when not hovering
         for (const mat of overlayMats.current) {
           mat.uniforms.u_intensity.value = 0.35;
-          // Boost intensity on hover for debugging
-          m.uniforms.u_intensity.value = 3.0;
-        }
-      } else {
-        console.log("[DEBUG] No hits, resetting intensity");
-        // Reset intensity when not hovering
-        for (const mat of overlayMats.current) {
-          mat.uniforms.u_intensity.value = 0.35;
         }
       }
     };
