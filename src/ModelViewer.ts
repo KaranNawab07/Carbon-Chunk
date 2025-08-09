@@ -73,11 +73,11 @@ export class ModelViewer {
 
   private addLights(): void {
     // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6)
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.2)
     this.scene.add(ambientLight)
 
     // Main directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8)
     directionalLight.position.set(10, 10, 5)
     directionalLight.castShadow = true
     directionalLight.shadow.mapSize.width = 2048
@@ -91,7 +91,7 @@ export class ModelViewer {
     this.scene.add(directionalLight)
 
     // Fill light
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.3)
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8)
     fillLight.position.set(-5, 0, -5)
     this.scene.add(fillLight)
   }
