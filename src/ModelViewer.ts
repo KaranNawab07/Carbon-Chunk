@@ -66,9 +66,6 @@ export class ModelViewer {
     // Add lights
     this.addLights()
 
-    // Add grid
-    const gridHelper = new THREE.GridHelper(10, 10, 0x888888, 0xcccccc)
-    this.scene.add(gridHelper)
   }
 
   private addLights(): void {
