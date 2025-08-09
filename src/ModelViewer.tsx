@@ -115,16 +115,12 @@ export default function ModelViewer() {
         for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.copy(pt);
 
         if (uv) {
-          const base = hit.object as THREE.Mesh;
-          const overlay = base.children.find(
-            (c: any) => c.isMesh && c.material && c.material.uniforms
-          ) as THREE.Mesh | undefined;
-
-          if (overlay) {
-            const mat = overlay.material as THREE.ShaderMaterial;
+          // Update ALL overlay materials with the UV position
+          for (const mat of overlayMats.current) {
             mat.uniforms.u_mouse.value.set(uv.x, uv.y);
-            console.log('RIPPLE AT UV:', uv.x.toFixed(3), uv.y.toFixed(3));
           }
+          console.log('RIPPLE AT UV:', uv.x.toFixed(3), uv.y.toFixed(3));
+          console.log('Updated', overlayMats.current.length, 'overlay materials');
         }
       } else {
         // Hide ripples when not hovering

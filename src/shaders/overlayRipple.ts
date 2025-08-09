@@ -70,13 +70,16 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       }
       
       if (u_mode == 2) { 
-        // Show a bright red circle at mouse position for debugging
+        // Show bright red everywhere to confirm overlay is rendering
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
         gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5);
         return; 
       }
 
-      // Hide if mouse is off-screen
+      // Hide if mouse is off-screen (but show some debug info)
       if (u_mouse.x < 0.0 || u_mouse.y < 0.0) {
+        // Show faint blue when mouse is off-screen to confirm shader is running
+        gl_FragColor = vec4(0.0, 0.0, 0.2, 0.3);
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
       }
