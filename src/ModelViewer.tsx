@@ -59,17 +59,29 @@ export default function ModelViewer() {
       console.log('Created ripple overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
-      overlay.raycast = () => {};
-      overlay.renderOrder = 1000;
-      overlay.frustumCulled = mesh.frustumCulled;
       
-      // Force the overlay to render on top
-      overlay.material.depthTest = false;
-      overlay.material.depthWrite = false;
-      overlay.material.transparent = true;
+      // Copy transform from base mesh
+      overlay.position.copy(mesh.position);
+      overlay.rotation.copy(mesh.rotation);
+      overlay.scale.copy(mesh.scale);
+      overlay.matrix.copy(mesh.matrix);
+      overlay.matrixWorld.copy(mesh.matrixWorld);
+      
+      // Disable raycasting for overlay
+      overlay.raycast = () => {};
+      
+      // Force overlay to render on top
+      overlay.renderOrder = 1000;
+      overlay.frustumCulled = false;
 
       mesh.userData.__overlayAdded = true;
-      mesh.add(overlay);
+      
+      // Add overlay to the same parent as the mesh, not as a child
+      if (mesh.parent) {
+        mesh.parent.add(overlay);
+      } else {
+        root.add(overlay);
+      }
 
       overlayMats.current.push(mat);
       hitTargets.current.push(mesh);

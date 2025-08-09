@@ -71,13 +71,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       
       if (u_mode == 2) { 
         // Show a bright red circle at mouse position for debugging
-        vec2 diff = vUv - u_mouse;
-        float dist = length(diff);
-        if (dist < 0.1) {
-          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        } else {
-          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-        }
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5);
         return; 
       }
 
