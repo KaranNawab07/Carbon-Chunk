@@ -69,11 +69,15 @@ export default function ModelViewer() {
       overlay.renderOrder = 9999;           // always after base
       overlay.frustumCulled = mesh.frustumCulled;
 
-      mesh.userData.__overlayAdded = true;
-      mesh.add(overlay);
+      // UV test first
+      m.uniforms.u_useUV.value = 1.0;
+      m.uniforms.u_mouse.value.set(0.5, 0.5);
 
-      overlayMats.current.push(mat);
+      m.uniforms.u_radius.value    = 0.45;
       hitTargets.current.push(mesh);        // we raycast base meshes only
+
+      // also set world center in case you flip to world test
+      m.uniforms.u_mouseWorld.value.set(0, 0, 0);
     }
 
     return root;
