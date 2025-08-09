@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
 /**
- * Smooth, subtle, anti-aliased ripple overlay.
- * - Additive only (does not alter base materials)
- * - Uses UV when available; else uses world-space distance
+ * Smooth, subtle, anti-aliased ripple overlay (additive only).
+ * - Renders on top of base materials (depthTest disabled + polygonOffset)
+ * - Uses UV when available; otherwise falls back to world-space distance
  */
 export type RippleUniforms = {
   u_time: number;
@@ -26,10 +26,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_mouseWorld:  { value: new THREE.Vector3(0, 0, 0) },
     u_speed:       { value: 0.5 },
     u_size:        { value: 4.0 },
-    u_intensity:   { value: 0.55 },            // boosted for visibility (tune later)
-    u_radius:      { value: 0.34 },            // boosted for visibility (tune later)
-    u_sigma:       { value: 0.08 },            // boosted for visibility (tune later)
-    u_facetMix:    { value: 0.22 },
+    u_intensity:   { value: 0.35 },                     // subtle default
+    u_radius:      { value: 0.26 },
+    u_sigma:       { value: 0.07 },
+    u_facetMix:    { value: 0.2 },
     u_rippleColor: { value: new THREE.Color(1.0, 1.0, 1.0) },
     u_useUV:       { value: 1.0 },
   };
@@ -78,8 +78,8 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
 
     float facetAA(vec2 p, float freq){
       vec2 d0 = vec2(1.0, 0.0);
-      vec2 d1 = rot(2.09439510239) * d0;
-      vec2 d2 = rot(4.18879020479) * d0;
+      vec2 d1 = rot(2.09439510239) * d0; // 120°
+      vec2 d2 = rot(4.18879020479) * d0; // 240°
       float f0 = dot(p, d0) * freq;
       float f1 = dot(p, d1) * freq;
       float f2 = dot(p, d2) * freq;
@@ -109,39 +109,32 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     }
 
     void main(){
-      // --- Choose coordinate space & compute distance/masks ---
-      float ringVal;
-      float areaMask;
-      float facet = 1.0;
+      float ripple, areaMask, facet = 1.0;
 
       if (u_useUV > 0.5) {
-        // UV space
         vec2 p = vUv - u_mouse;
         float distUV = length(p);
         areaMask = radialMask(p, u_radius);
-        ringVal = gaussianRing(distUV, u_sigma);
+        ripple = gaussianRing(distUV, u_sigma);
 
         vec2 flow = vec2(0.08, -0.05) * u_time;
         facet = facetAA(vUv + flow, u_size * 6.28318);
       } else {
-        // World space (fallback when no UVs)
         float distW = length(vWorldPos - u_mouseWorld);
-        // Convert a UV-ish radius to world units via normal-based scale
-        // Heuristic: scale radius by local variation to keep size reasonable
-        float worldRadius = u_radius * 2.0; // try 2.0–3.0 for your model
+        // ⬇ bump factor so world-mode meshes visibly react
+        float worldRadius = u_radius * 2.8;
         float wfw = fwidth(distW) * 2.0;
         areaMask = 1.0 - smoothstep(worldRadius - wfw, worldRadius + wfw, distW);
-        ringVal = gaussianRing(distW, u_sigma * 0.5); // slightly thinner in world space
+        ripple = gaussianRing(distW, u_sigma * 0.5);
 
-        // Minimal facet modulation in world fallback (soft)
         vec3 n = normalize(abs(vWorldNormal) + 1e-5);
         vec2 proj = mix(vWorldPos.yz, vWorldPos.xy, n.z);
         vec2 flow = vec2(0.06, -0.04) * u_time;
         facet = facetAA(proj + flow, (u_size * 6.28318) * 0.6);
       }
 
-      float ripple = mix(ringVal, ringVal * facet, clamp(u_facetMix, 0.0, 1.0));
-      float strength = ripple * areaMask * u_intensity;
+      float ring = mix(ripple, ripple * facet, clamp(u_facetMix, 0.0, 1.0));
+      float strength = ring * areaMask * u_intensity;
 
       vec3 addLight = u_rippleColor * strength;
       gl_FragColor = vec4(addLight, strength);
@@ -154,8 +147,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     fragmentShader: frag,
     transparent: true,
     depthWrite: false,
-    depthTest: true,
+    depthTest: false,              // always render on top
     blending: THREE.AdditiveBlending,
+    polygonOffset: true,           // nudge in front of base mesh
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
   });
 
   return mat;
