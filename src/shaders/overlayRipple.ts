@@ -70,13 +70,13 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       }
       
       if (u_mode == 2) { 
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 0.8);
         return; 
       }
 
       // Hide if mouse is off-screen
       if (u_mouse.x < 0.0 || u_mouse.y < 0.0) {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        discard;
         return;
       }
 
@@ -86,7 +86,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       
       // Create expanding ring
       float ringRadius = mod(u_time * u_speed, u_radius);
-      float ringWidth = u_sigma;
+      float ringWidth = u_sigma * 2.0;
       
       // Ring intensity based on distance from ring edge
       float ringDist = abs(dist - ringRadius);
@@ -99,11 +99,11 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       float mask = 1.0 - smoothstep(u_radius - 0.05, u_radius, dist);
       
       // Calculate final intensity
-      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity;
+      float finalIntensity = ringIntensity * fadeFactor * mask * u_intensity * 2.0;
       
       // Mix base and ripple colors
       vec3 color = mix(u_baseColor, u_rippleColor, finalIntensity);
-      gl_FragColor = vec4(color, finalIntensity * 0.8);
+      gl_FragColor = vec4(color, max(finalIntensity, 0.1));
     }
   `;
 
