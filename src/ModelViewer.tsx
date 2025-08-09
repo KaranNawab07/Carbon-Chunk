@@ -4,7 +4,7 @@ import { useFrame, ThreeEvent } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
 import { createRippleMaterial } from "./shaders/rippleMaterial";
 
-const MODEL_URL = "/b6ae0504-48ae-4708-a8f3-619e3b46318e_textured_mesh.glb";
+const MODEL_URL = "/model.glb";
 
 function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
   const box = new THREE.Box3().setFromObject(object);
