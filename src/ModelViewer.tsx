@@ -91,6 +91,7 @@ export default function ModelViewer() {
   useEffect(() => {
     const el = gl.domElement;
     const handler = (ev: PointerEvent) => {
+      return; // TEMPORARILY DISABLE to see fixed ring
       if (!hitTargets.current.length) return;
 
       const rect = el.getBoundingClientRect();
