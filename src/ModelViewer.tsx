@@ -68,10 +68,10 @@ export default function ModelViewer() {
       // AGGRESSIVE DIAGNOSTICS - make ring impossible to miss
       mat.uniforms.u_mode.value = 4;        // raw ring mode
       mat.uniforms.u_mouse.value.set(0.5, 0.5); // center of UV
-      mat.uniforms.u_radius.value = 1.0;    // huge radius
-      mat.uniforms.u_sigma.value = 0.1;     // focused ring
-      mat.uniforms.u_intensity.value = 5.0; // super bright
-      mat.uniforms.u_speed.value = 0.0;     // no animation for now
+      mat.uniforms.u_radius.value = 0.3;    // reasonable radius
+      mat.uniforms.u_sigma.value = 0.08;    // focused ring
+      mat.uniforms.u_intensity.value = 0.8; // visible but not overwhelming
+      mat.uniforms.u_speed.value = 0.6;     // smooth animation
       console.log('Created overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
@@ -91,7 +91,6 @@ export default function ModelViewer() {
   useEffect(() => {
     const el = gl.domElement;
     const handler = (ev: PointerEvent) => {
-      return; // TEMPORARILY DISABLE to see fixed ring
       if (!hitTargets.current.length) return;
 
       const rect = el.getBoundingClientRect();

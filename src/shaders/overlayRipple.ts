@@ -69,7 +69,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
 
     // Wrapped ring so it never "runs off" the mesh
     float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = t * speed;  // Remove fract() to see the ring
+      float rc = fract(t * speed) * 0.7;  // Animated expanding ring
       float x = (dist - rc) / max(sigma, 1e-4);
       float g = exp(-0.5 * x * x);
       return g;
