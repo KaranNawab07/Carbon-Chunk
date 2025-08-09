@@ -1,7 +1,6 @@
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import ModelViewer from './ModelViewer';
 
 export default function App() {
@@ -31,9 +30,6 @@ export default function App() {
       >
         <OrbitControls enableDamping dampingFactor={0.05} />
         <ModelViewer />
-        <EffectComposer>
-          <Bloom luminanceThreshold={0.7} luminanceSmoothing={0.1} intensity={0.6} />
-        </EffectComposer>
       </Canvas>
     </div>
   );
