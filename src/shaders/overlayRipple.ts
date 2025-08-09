@@ -128,7 +128,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
         float distW = length(vWorldPos - u_mouseWorld);
         // Convert a UV-ish radius to world units via normal-based scale
         // Heuristic: scale radius by local variation to keep size reasonable
-        float worldRadius = u_radius * 1.2; // tweak as needed per model scale
+        float worldRadius = u_radius * 2.0; // try 2.0–3.0 for your model
         float wfw = fwidth(distW) * 2.0;
         areaMask = 1.0 - smoothstep(worldRadius - wfw, worldRadius + wfw, distW);
         ringVal = gaussianRing(distW, u_sigma * 0.5); // slightly thinner in world space
