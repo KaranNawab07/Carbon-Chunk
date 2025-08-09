@@ -26,6 +26,8 @@ export default function App() {
         onCreated={({ gl }) => {
           gl.setClearColor(0x000000, 1);
           gl.domElement.style.cursor = 'crosshair';
+          // Enable alpha blending for transparency
+          gl.sortObjects = true;
         }}
       >
         <OrbitControls enableDamping dampingFactor={0.05} />

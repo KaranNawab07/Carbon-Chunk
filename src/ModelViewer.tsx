@@ -76,10 +76,16 @@ export default function ModelViewer() {
       overlay.matrixAutoUpdate = true;
       overlay.visible = true;
       
+      // Force material to be visible
+      mat.visible = true;
+      mat.needsUpdate = true;
+      
       console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
       console.log('Overlay position:', overlay.position);
       console.log('Overlay visible:', overlay.visible);
       console.log('Material transparent:', mat.transparent);
+      console.log('Material visible:', mat.visible);
+      console.log('Overlay geometry vertices:', overlay.geometry.attributes.position?.count);
 
       mesh.userData.__overlayAdded = true;
       
