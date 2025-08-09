@@ -35,8 +35,9 @@ function App() {
       
       <div style={{ height: 'calc(100vh - 80px)' }}>
         <Canvas
-          camera={{ position: [5, 5, 5], fov: 75 }}
-          style={{ background: 'white' }}
+          dpr={[1, 2]}
+          onCreated={({ gl }) => gl.setClearColor(0x000000, 1)}
+          camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, 4] }}
         >
           <ambientLight intensity={2.5} />
           <directionalLight position={[10, 10, 5]} intensity={3.0} castShadow />
