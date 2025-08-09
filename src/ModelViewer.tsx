@@ -5,7 +5,7 @@ import { Html, useGLTF, Environment } from "@react-three/drei";
 import { createOverlayRipple } from "./shaders/overlayRipple";
 
 const MODEL_URL = "/model.glb";
-const DIAG = false; // set to false after you see the pulse once
+const DIAG = true; // re-enable for debugging
 
 function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
   const box = new THREE.Box3().setFromObject(object);
@@ -67,19 +67,21 @@ export default function ModelViewer() {
       overlayMats.current.push(mat);
       hitTargets.current.push(mesh);
 
-      // Optional: log UV presence per mesh
-      // console.log("[overlay]", mesh.name || mesh.uuid, "hasUV=", hasUV);
+      // Debug: log UV presence per mesh
+      console.log("[overlay]", mesh.name || mesh.uuid, "hasUV=", hasUV);
     }
 
     // 🔎 Diagnostic pulse (visible without moving the mouse). Remove after verifying.
     if (DIAG) {
       for (const m of overlayMats.current) {
-        m.uniforms.u_intensity.value = 1.0;
-        m.uniforms.u_radius.value    = 0.45;  // UV
-        m.uniforms.u_sigma.value     = 0.12;
+        m.uniforms.u_intensity.value = 2.0;  // extra bright
+        m.uniforms.u_radius.value    = 0.8;  // larger
+        m.uniforms.u_sigma.value     = 0.2;  // thicker
         m.uniforms.u_mouse.value.set(0.5, 0.5);
         m.uniforms.u_mouseWorld.value.set(0, 0, 0);
+        m.uniforms.u_rippleColor.value.set(1.0, 0.0, 0.0); // bright red for visibility
       }
+      console.log("[DIAG] Applied diagnostic settings to", overlayMats.current.length, "materials");
     }
 
     return root;
@@ -101,10 +103,19 @@ export default function ModelViewer() {
         const hit = hits[0];
         const uv = (hit.uv ?? null) as THREE.Vector2 | null;
         const pt = hit.point;
+        
+        console.log("[raycast] hit:", hit.object.name || hit.object.uuid, "uv:", uv, "point:", pt);
 
         for (const m of overlayMats.current) {
           if (uv) m.uniforms.u_mouse.value.set(uv.x, uv.y);
           m.uniforms.u_mouseWorld.value.set(pt.x, pt.y, pt.z);
+          // Boost intensity on hover for debugging
+          m.uniforms.u_intensity.value = 3.0;
+        }
+      } else {
+        // Reset intensity when not hovering
+        for (const m of overlayMats.current) {
+          m.uniforms.u_intensity.value = 0.35;
         }
       }
     };
