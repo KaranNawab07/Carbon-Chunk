@@ -60,8 +60,13 @@ export default function ModelViewer() {
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
       overlay.raycast = () => {};
-      overlay.renderOrder = 9999;
+      overlay.renderOrder = 1000;
       overlay.frustumCulled = mesh.frustumCulled;
+      
+      // Force the overlay to render on top
+      overlay.material.depthTest = false;
+      overlay.material.depthWrite = false;
+      overlay.material.transparent = true;
 
       mesh.userData.__overlayAdded = true;
       mesh.add(overlay);
