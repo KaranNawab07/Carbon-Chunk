@@ -48,17 +48,18 @@ export default function ModelViewer() {
 
     for (const mesh of baseMeshes) {
       mesh.raycast = THREE.Mesh.prototype.raycast;
-      const mat = createOverlayRipple();
-      mat.uniforms.u_useUV.value = mesh.geometry.attributes?.uv ? 1.0 : 0.0;
       
-      // Set up ripple parameters
-      mat.uniforms.u_mode.value = 0;        // normal ripple mode
-      mat.uniforms.u_radius.value = 0.5;    // larger ripple radius
-      mat.uniforms.u_sigma.value = 0.1;     // thicker ring
-      mat.uniforms.u_intensity.value = 2.0; // much brighter
-      mat.uniforms.u_speed.value = 2.0;     // expansion speed
+      // Create a simple test material first
+      const testMat = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide,
+        depthTest: false,
+        depthWrite: false
+      });
       
-      const overlay = new THREE.Mesh(mesh.geometry, mat);
+      const overlay = new THREE.Mesh(mesh.geometry, testMat);
       
       // Copy all transform properties
       overlay.position.copy(mesh.position);
@@ -92,7 +93,8 @@ export default function ModelViewer() {
       // Add overlay directly to root to ensure it's in the scene
       root.add(overlay);
 
-      overlayMats.current.push(mat);
+      // Store the test material for now
+      overlayMats.current.push(testMat as any);
       hitTargets.current.push(mesh);
     }
     
