@@ -68,10 +68,10 @@ export default function ModelViewer() {
       // AGGRESSIVE DIAGNOSTICS - make ring impossible to miss
       mat.uniforms.u_mode.value = 4;        // raw ring mode
       mat.uniforms.u_mouse.value.set(0.5, 0.5); // center of UV
-      mat.uniforms.u_radius.value = 0.8;    // huge radius
-      mat.uniforms.u_sigma.value = 0.2;     // thick ring
-      mat.uniforms.u_intensity.value = 3.0; // super bright
-      mat.uniforms.u_speed.value = 0.5;     // animated ring
+      mat.uniforms.u_radius.value = 1.0;    // huge radius
+      mat.uniforms.u_sigma.value = 0.1;     // focused ring
+      mat.uniforms.u_intensity.value = 5.0; // super bright
+      mat.uniforms.u_speed.value = 0.0;     // no animation for now
       console.log('Created overlay for mesh with UVs:', !!mesh.geometry.attributes?.uv);
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);

@@ -69,12 +69,10 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
 
     // Wrapped ring so it never "runs off" the mesh
     float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = fract(t * speed) * 0.7;  // <- critical fix
+      float rc = t * speed;  // Remove fract() to see the ring
       float x = (dist - rc) / max(sigma, 1e-4);
       float g = exp(-0.5 * x * x);
-      float fw = fwidth(dist) * 1.5;
-      float g2 = exp(-0.5 * ((dist - rc) / max(sigma + fw, 1e-4)) * ((dist - rc) / max(sigma + fw, 1e-4)));
-      return mix(g, g2, 0.5);
+      return g;
     }
 
     void main(){
