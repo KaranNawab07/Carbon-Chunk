@@ -46,11 +46,11 @@ export class ModelViewer {
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1
+    this.renderer.toneMappingExposure = 1.8
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
 
     // Set up scene
-    this.scene.background = new THREE.Color(0xf0f0f0)
+    this.scene.background = new THREE.Color(0xffffff)
 
     // Set up camera
     this.camera.position.set(5, 5, 5)
@@ -70,11 +70,11 @@ export class ModelViewer {
 
   private addLights(): void {
     // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 1.2)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5)
     this.scene.add(ambientLight)
 
     // Main directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 3.0)
     directionalLight.position.set(10, 10, 5)
     directionalLight.castShadow = true
     directionalLight.shadow.mapSize.width = 2048
@@ -88,9 +88,22 @@ export class ModelViewer {
     this.scene.add(directionalLight)
 
     // Fill light
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8)
+    const fillLight = new THREE.DirectionalLight(0xffffff, 2.0)
     fillLight.position.set(-5, 0, -5)
     this.scene.add(fillLight)
+
+    // Additional lights for better illumination
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.5)
+    topLight.position.set(0, 15, 0)
+    this.scene.add(topLight)
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 1.2)
+    backLight.position.set(0, 5, -10)
+    this.scene.add(backLight)
+
+    const sideLight = new THREE.DirectionalLight(0xffffff, 1.0)
+    sideLight.position.set(15, 5, 0)
+    this.scene.add(sideLight)
   }
 
   private setupEventListeners(): void {
