@@ -22,23 +22,27 @@ export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
   const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
 
+  // Animate time & autorotate
   useFrame((_, delta) => {
     for (const m of overlayMats.current) m.uniforms.u_time.value += delta;
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
+  // Pointer -> update both UV and WORLD uniforms (used later after we remove diagnostics)
   const onPointerMove = (e: ThreeEvent<PointerEvent>) => {
     for (const m of overlayMats.current) {
-      if (e.uv) m.uniforms.u_mouse.value.set(e.uv.x, e.uv.y);
+      if (e.uv)    m.uniforms.u_mouse.value.set(e.uv.x, e.uv.y);
       if (e.point) m.uniforms.u_mouseWorld.value.set(e.point.x, e.point.y, e.point.z);
     }
   };
 
+  // Load & prep once
   const { scene } = useGLTF(MODEL_URL);
   const prepared = useMemo(() => {
     const root = scene.clone(true);
     centerAndScaleToUnit(root, 2.0);
 
+    // 1) Collect ONLY original meshes
     const targets: THREE.Mesh[] = [];
     root.traverse((child: any) => {
       if (child.isMesh && child.geometry && !child.userData.__overlayAdded) {
@@ -46,40 +50,49 @@ export default function ModelViewer() {
       }
     });
 
-    overlayMats.current = [];
+    // 2) Create overlays in a separate pass
+    overlayMats.current = []; // reset
     for (const mesh of targets) {
+      // Base mesh should receive raycasts (for e.uv / e.point)
       mesh.raycast = THREE.Mesh.prototype.raycast;
 
       const mat = createOverlayRipple({
-        // keep these if you want the stronger debug visibility first run:
-        u_intensity: 0.55,
-        u_radius: 0.34,
-        u_sigma: 0.08,
+        // subtle defaults (we'll override below for diagnostics)
+        // u_intensity: 0.35, u_radius: 0.26, u_sigma: 0.07
       }) as THREE.ShaderMaterial;
 
       const hasUV = !!mesh.geometry.attributes?.uv;
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
 
       const overlay = new THREE.Mesh(mesh.geometry, mat);
-      
-      // ⬇️ make sure the overlay never steals pointer events
+
+      // ✳️ Critical: overlays must NOT capture pointer events
       overlay.raycast = () => {};
-      
-      // keep the rest
-      overlay.userData.__isOverlay = true;
+
+      // Draw after base material to avoid depth/ordering faintness
+      overlay.renderOrder = 9999;
       overlay.frustumCulled = mesh.frustumCulled;
-      overlay.renderOrder = (mesh.renderOrder || 0) + 1;
 
       mesh.userData.__overlayAdded = true;
       mesh.add(overlay);
       overlayMats.current.push(mat);
+
+      // Optional log (helps confirm UV presence)
+      // console.log("[overlay]", mesh.name || mesh.uuid, "hasUV=", hasUV);
     }
 
-    // Optional subtle defaults for production
+    // 3) 🔎 DIAGNOSTIC OVERRIDES (force a big pulse so you can see it)
+    //    You should see a bright, wide pulse near UV center (0.5, 0.5).
     for (const m of overlayMats.current) {
-      m.uniforms.u_intensity.value = 0.35;
-      m.uniforms.u_radius.value    = 0.26;
-      m.uniforms.u_sigma.value     = 0.06;
+      // Try UV mode first:
+      m.uniforms.u_useUV.value = 1.0;                // force UV for the test
+      m.uniforms.u_mouse.value.set(0.5, 0.5);        // UV center
+      m.uniforms.u_intensity.value = 1.0;            // strong
+      m.uniforms.u_radius.value    = 0.45;           // wide
+      m.uniforms.u_sigma.value     = 0.12;           // thick
+
+      // Also set world center in case you switch to world test below
+      m.uniforms.u_mouseWorld.value.set(0, 0, 0);
     }
 
     return root;
