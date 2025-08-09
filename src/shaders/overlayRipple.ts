@@ -32,7 +32,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_worldRadiusMul:{ value: 2.6 },   // tweak per model size
     u_useUV:         { value: 0.0 },   // FORCE WORLD MODE
     u_mode:          { value: 0 },
-    u_triScale:      { value: 0.10 },  // facet size in world units
+    u_triScale:      { value: 0.05 },  // facet size in world units
     u_triSharp:      { value: 0.25 },  // 0 = soft, 1 = sharp facets
   };
 
