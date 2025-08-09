@@ -72,7 +72,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       return 1.0 - smoothstep(r - w, r + w, d);
     }
     float gaussianRing(float dist, float sigma, float t, float speed){
-      float rc = t * speed;
+      float rc = fract(t * speed) * 0.7;  // keeps the ring on-mesh forever
       float x = (dist - rc) / max(sigma, 1e-4);
       float g = exp(-0.5 * x * x);
       float fw = fwidth(dist) * 1.5;
@@ -129,7 +129,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     fragmentShader: frag,
     transparent: true,
     depthWrite: false,
-    depthTest: false,          // always on top of the base
+    depthTest: false,
     blending: THREE.AdditiveBlending,
     polygonOffset: true,
     polygonOffsetFactor: -1,

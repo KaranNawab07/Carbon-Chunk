@@ -58,6 +58,13 @@ export default function ModelViewer() {
       console.log(`[diag] mesh has UV: ${hasUV}`);
 
       const mat = createOverlayRipple();
+      // Force-visible diagnostics (temporary)
+      mat.uniforms.u_mode.value = 4;     // raw ring
+      mat.uniforms.u_speed.value = 0.0;  // freeze
+      mat.uniforms.u_radius.value = 0.5;
+      mat.uniforms.u_sigma.value = 0.1;
+      mat.uniforms.u_intensity.value = 1.5;
+
       // your model has UVs — keep UV mode
       mat.uniforms.u_useUV.value = hasUV ? 1.0 : 0.0;
 
@@ -96,7 +103,7 @@ export default function ModelViewer() {
 
       if (hits.length) {
         const hit = hits[0];
-        const uv = (hit.uv ?? null) as THREE.Vector2 | null;
+        const uv = hit.uv ?? null;
         const pt = hit.point;
 
         console.log(`[diag] hit detected, UV: ${uv ? `${uv.x.toFixed(3)}, ${uv.y.toFixed(3)}` : 'none'}`);
@@ -108,7 +115,10 @@ export default function ModelViewer() {
         if (uv) {
           // find overlay material attached to that base mesh
           const base = hit.object as THREE.Mesh;
-          const overlay = base.children.find((c: any) => c.isMesh && c.material && c.material.uniforms) as THREE.Mesh | undefined;
+          const overlay = base.children.find(
+            (c: any) => c.isMesh && c.material && c.material.uniforms
+          ) as THREE.Mesh | undefined;
+
           if (overlay) {
             (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
           }
