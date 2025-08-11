@@ -32,9 +32,6 @@ export default function App() {
       >
         <OrbitControls enableDamping dampingFactor={0.05} />
         <ModelViewer />
-      Simple rotating GLB model viewer.
     </div>
   );
-}
-  )
 }
