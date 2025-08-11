@@ -29,7 +29,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
   const uniforms = {
     u_time:          { value: 0 },
     u_mouse:         { value: new THREE.Vector2(-10, -10) },
-    u_mouseWorld:    { value: new THREE.Vector3(0, 0, 0) },
+    u_mouseWorld:    { value: new THREE.Vector3(9999, 9999, 9999) }, // hidden until first hit
 
     u_intensity:     { value: 0.38 },
     u_rippleColor:   { value: new THREE.Color(1.0, 1.0, 1.0) },
@@ -67,6 +67,9 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
   `;
 
   const frag = /* glsl */`
+    #ifdef GL_OES_standard_derivatives
+    #extension GL_OES_standard_derivatives : enable
+    #endif
     precision highp float;
     varying vec3 vWorldPos;
     varying vec3 vWorldNormal;
@@ -190,6 +193,9 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1,
   });
+
+  // Enable derivatives extension
+  mat.extensions = { derivatives: true };
 
   return mat as THREE.ShaderMaterial;
 }

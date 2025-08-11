@@ -23,7 +23,6 @@ export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
   const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
   const hitTargets = useRef<THREE.Mesh[]>([]);
-  const lastUV = useRef<THREE.Vector2 | null>(null);
   const lastPt = useRef<THREE.Vector3 | null>(null);
   const hideTimer = useRef<number | null>(null);
   const builtOnce = useRef(false);
@@ -38,7 +37,7 @@ export default function ModelViewer() {
 
   const { scene } = useGLTF(MODEL_URL);
   const prepared = useMemo(() => {
-    if (builtOnce.current && cached.current) return cached.current;  // skip duplicates
+    if (builtOnce.current && cached.current) return cached.current;
 
     const root = scene.clone(true);
     centerAndScaleToUnit(root, 2.0);
@@ -87,7 +86,6 @@ export default function ModelViewer() {
     builtOnce.current = true;
     cached.current = root;
 
-    // better log:
     console.log("Mesh children (overlay check):", baseMeshes.map(m => ({ name: m.name, children: m.children.length })));
     
     return root;
@@ -113,50 +111,27 @@ export default function ModelViewer() {
 
       if (hits.length) {
         const hit = hits[0];
-        const uv = (hit.uv ?? null) as THREE.Vector2 | null;
         const pt = hit.point;
 
         // remember last-known hit
-        if (uv) {
-          if (!lastUV.current) lastUV.current = new THREE.Vector2();
-          lastUV.current.set(uv.x, uv.y);
-        }
         if (!lastPt.current) lastPt.current = new THREE.Vector3();
         lastPt.current.copy(pt);
 
         // world point for all overlays
-        if (lastPt.current) {
-          for (const m of overlayMats.current) {
-            m.uniforms.u_mouseWorld.value.copy(lastPt.current);
-          }
+        for (const m of overlayMats.current) {
+          m.uniforms.u_mouseWorld.value.copy(pt);
         }
-
-        // set UV center on the hit mesh's overlay; others keep their last UV
-        if (uv) {
-          let base: THREE.Object3D | null = hit.object;
-          while (base && !(base as any).isMesh) base = base.parent;
-          const overlay = base
-            ? (base.children.find(
-                (c: any) => c.isMesh && c.material && c.material.uniforms
-              ) as THREE.Mesh | undefined)
-            : undefined;
-
-          if (overlay) {
-            (overlay.material as THREE.ShaderMaterial).uniforms.u_mouse.value.set(uv.x, uv.y);
-          }
-          // keep showing last UV (prevents flicker)
-          for (const m of overlayMats.current) {
-            m.uniforms.u_mouse.value.copy(lastUV.current);
-          }
+      } else if (lastPt.current) {
+        // no hit this frame but we have a last point — keep using it briefly
+        for (const m of overlayMats.current) {
+          m.uniforms.u_mouseWorld.value.copy(lastPt.current);
         }
-      } else {
-        // no hit this frame — DO NOT blank immediately.
+        
         // schedule a gentle hide in 250ms (user likely left the model)
         if (!hideTimer.current) {
           hideTimer.current = window.setTimeout(() => {
-            lastUV.current = null;
             lastPt.current = null;
-            for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
+            for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.set(9999, 9999, 9999);
             hideTimer.current = null;
           }, 250);
         }
@@ -168,9 +143,8 @@ export default function ModelViewer() {
         window.clearTimeout(hideTimer.current); 
         hideTimer.current = null; 
       }
-      lastUV.current = null;
       lastPt.current = null;
-      for (const m of overlayMats.current) m.uniforms.u_mouse.value.set(-10, -10);
+      for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.set(9999, 9999, 9999);
     };
     
     el.addEventListener("pointermove", handler, { passive: true });
@@ -187,20 +161,21 @@ export default function ModelViewer() {
       const k = e.key;
       console.log('Key pressed:', k, 'Overlay materials:', overlayMats.current.length);
       if (!overlayMats.current.length) return;
-      if (k === "1") {
-        console.log('Setting mode 1 (UV debug)');
-        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 1);
-      }
-      if (k === "2") {
-        console.log('Setting mode 2 (Red debug)');
-        overlayMats.current.forEach(m => {
-          m.uniforms.u_mode.value = 2;
-          m.uniforms.u_mouse.value.set(0.5, 0.5);
-        });
-      }
-      if (k === "3") {
-        console.log('Setting mode 0 (Ripple)');
+      if (k === "0") {
+        console.log('Setting mode 0 (Normal)');
         overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0);
+      }
+      if (k === "4") {
+        console.log('Setting mode 4 (Raw noise)');
+        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 4);
+      }
+      if (k === "5") {
+        console.log('Setting mode 5 (Blob mask)');
+        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 5);
+      }
+      if (k === "6") {
+        console.log('Setting mode 6 (Locality)');
+        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 6);
       }
     };
     window.addEventListener("keydown", onKey);
