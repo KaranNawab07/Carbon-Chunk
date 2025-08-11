@@ -41,9 +41,9 @@ export default function ModelViewer() {
 
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 10, 5]} intensity={1.2} />
-      <directionalLight position={[-10, -10, -5]} intensity={0.8} />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[10, 10, 5]} intensity={2.0} />
+      <directionalLight position={[-10, -10, -5]} intensity={1.5} />
       <group ref={groupRef} dispose={null}>
         {prepared ? (
           <primitive object={prepared} />
