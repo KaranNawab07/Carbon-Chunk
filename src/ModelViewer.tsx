@@ -41,7 +41,9 @@ export default function ModelViewer() {
 
   return (
     <>
-      <Environment preset="studio" />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[10, 10, 5]} intensity={0.8} />
+      <directionalLight position={[-10, -10, -5]} intensity={0.3} />
       <group ref={groupRef} dispose={null}>
         {prepared ? (
           <primitive object={prepared} />
