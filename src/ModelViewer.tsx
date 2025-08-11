@@ -1,11 +1,9 @@
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { Html, useGLTF, Environment } from "@react-three/drei";
-import { createOverlayRipple } from "./shaders/overlayRipple";
 
 const MODEL_URL = "/model.glb";
-const USE_DEBUG_KEYS = true;
 
 function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
   const box = new THREE.Box3().setFromObject(object);
@@ -21,17 +19,10 @@ function centerAndScaleToUnit(object: THREE.Object3D, targetSize = 2) {
 
 export default function ModelViewer() {
   const groupRef = useRef<THREE.Group>(null);
-  const overlayMats = useRef<THREE.ShaderMaterial[]>([]);
-  const hitTargets = useRef<THREE.Mesh[]>([]);
-  const lastPt = useRef<THREE.Vector3 | null>(null);
-  const hideTimer = useRef<number | null>(null);
   const builtOnce = useRef(false);
   const cached = useRef<THREE.Object3D | null>(null);
-  const { gl, camera } = useThree();
-  const raycaster = useRef(new THREE.Raycaster()).current;
 
   useFrame((_, delta) => {
-    for (const m of overlayMats.current) m.uniforms.u_time.value += delta;
     if (groupRef.current) groupRef.current.rotation.y += 0.2 * delta;
   });
 
@@ -41,146 +32,12 @@ export default function ModelViewer() {
 
     const root = scene.clone(true);
     centerAndScaleToUnit(root, 2.0);
-
-    const baseMeshes: THREE.Mesh[] = [];
-    root.traverse((child: any) => {
-      if (child.isMesh && child.geometry && !child.userData.__overlayAdded) baseMeshes.push(child);
-    });
-
-    console.log('Found base meshes:', baseMeshes.length);
-
-    overlayMats.current = [];
-    hitTargets.current = [];
-
-    for (const mesh of baseMeshes) {
-      mesh.raycast = THREE.Mesh.prototype.raycast;
-      
-      // Create shader material with ripple effect
-      const shaderMat = createOverlayRipple();
-      
-      // Force world mode (no UVs)
-      shaderMat.uniforms.u_useUV.value = 0.0;
-      
-      const overlay = new THREE.Mesh(mesh.geometry, shaderMat);
-      
-      // Keep overlay glued to base surface
-      overlay.position.set(0, 0, 0);
-      
-      // Overlay should never intercept pointer events
-      overlay.raycast = () => {};
-      overlay.renderOrder = 9999;
-      overlay.frustumCulled = mesh.frustumCulled;
-      
-      console.log('Creating overlay for mesh:', mesh.name || 'unnamed');
-
-      mesh.userData.__overlayAdded = true;
-      
-      // Add overlay as child of the mesh
-      mesh.add(overlay);
-
-      // Store the shader material
-      overlayMats.current.push(shaderMat);
-      hitTargets.current.push(mesh);
-    }
     
     builtOnce.current = true;
     cached.current = root;
-
-    console.log("Mesh children (overlay check):", baseMeshes.map(m => ({ name: m.name, children: m.children.length })));
     
     return root;
   }, [scene]);
-
-  useEffect(() => {
-    const el = gl.domElement;
-    const handler = (ev: PointerEvent) => {
-      if (!hitTargets.current.length) return;
-
-      const rect = el.getBoundingClientRect();
-      const x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera({ x, y }, camera);
-      const hits = raycaster.intersectObjects(hitTargets.current, true);
-
-      // cancel any pending hide (we got activity)
-      if (hideTimer.current) {
-        window.clearTimeout(hideTimer.current);
-        hideTimer.current = null;
-      }
-
-      if (hits.length) {
-        const hit = hits[0];
-        const pt = hit.point;
-
-        // remember last-known hit
-        if (!lastPt.current) lastPt.current = new THREE.Vector3();
-        lastPt.current.copy(pt);
-
-        // world point for all overlays
-        for (const m of overlayMats.current) {
-          m.uniforms.u_mouseWorld.value.copy(pt);
-        }
-      } else if (lastPt.current) {
-        // no hit this frame but we have a last point — keep using it briefly
-        for (const m of overlayMats.current) {
-          m.uniforms.u_mouseWorld.value.copy(lastPt.current);
-        }
-        
-        // schedule a gentle hide in 250ms (user likely left the model)
-        if (!hideTimer.current) {
-          hideTimer.current = window.setTimeout(() => {
-            lastPt.current = null;
-            for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.set(9999, 9999, 9999);
-            hideTimer.current = null;
-          }, 250);
-        }
-      }
-    };
-    
-    const onLeave = () => {
-      if (hideTimer.current) { 
-        window.clearTimeout(hideTimer.current); 
-        hideTimer.current = null; 
-      }
-      lastPt.current = null;
-      for (const m of overlayMats.current) m.uniforms.u_mouseWorld.value.set(9999, 9999, 9999);
-    };
-    
-    el.addEventListener("pointermove", handler, { passive: true });
-    el.addEventListener("pointerleave", onLeave, { passive: true });
-    return () => {
-      el.removeEventListener("pointermove", handler);
-      el.removeEventListener("pointerleave", onLeave);
-    };
-  }, [gl, camera, raycaster]);
-
-  useEffect(() => {
-    if (!USE_DEBUG_KEYS) return;
-    const onKey = (e: KeyboardEvent) => {
-      const k = e.key;
-      console.log('Key pressed:', k, 'Overlay materials:', overlayMats.current.length);
-      if (!overlayMats.current.length) return;
-      if (k === "0") {
-        console.log('Setting mode 0 (Normal)');
-        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 0);
-      }
-      if (k === "4") {
-        console.log('Setting mode 4 (Raw noise)');
-        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 4);
-      }
-      if (k === "5") {
-        console.log('Setting mode 5 (Blob mask)');
-        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 5);
-      }
-      if (k === "6") {
-        console.log('Setting mode 6 (Locality)');
-        overlayMats.current.forEach(m => m.uniforms.u_mode.value = 6);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   return (
     <>
