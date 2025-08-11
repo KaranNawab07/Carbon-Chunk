@@ -20,8 +20,7 @@ export default function App() {
         }}
       >
         Hover the model: ripple should follow the cursor. Press 1-6 for debug modes.
-      </Canvas>
-    </div>
+      </div>
       <Canvas 
         dpr={[1, 2]} 
         onCreated={({ gl }) => {
@@ -33,7 +32,7 @@ export default function App() {
       >
         <OrbitControls enableDamping dampingFactor={0.05} />
         <ModelViewer />
+      </Canvas>
     </div>
   );
-}
 }
