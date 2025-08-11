@@ -3,21 +3,23 @@ import * as THREE from "three";
 export type RippleUniforms = {
   u_time: number;
   u_mouse: THREE.Vector2;        // kept for compatibility (unused here)
-  u_mouseWorld: THREE.Vector3;   // ← cursor hit in world space
-  u_radius: number;              // base locality (paired with u_worldRadiusMul)
-  u_sigma: number;               // unused in blob variant (left for future)
-  u_speed: number;               // unused in blob variant (left for future)
+  u_mouseWorld: THREE.Vector3;   // cursor hit in world space
+  u_radius: number;              // kept for compat
+  u_sigma: number;               // not used in blob variant
+  u_speed: number;               // not used in blob variant
   u_intensity: number;           // brightness
   u_baseColor: THREE.Color;      // debug only
-  u_rippleColor: THREE.Color;    // additive "neon" color
-  u_worldRadiusMul: number;      // locality falloff range, in world units
+  u_rippleColor: THREE.Color;    // additive "neon"
+  u_worldRadiusMul: number;      // locality falloff range (world units)
   u_useUV: number;               // FORCE 0 (world mode)
-  u_mode: number;                // debug modes (0 normal, 4/5/6 diagnostics)
-  // geometric facet (crystalline sheen)
+  u_mode: number;                // 0 normal, 4/5/6 diagnostics
+
+  // crystalline sheen
   u_triScale: number;            // world facet size (smaller = finer)
-  u_triSharp: number;            // 0..1 facet edge sharpness
+  u_triSharp: number;            // 0..1 sharpness
+
   // blob (random shape) controls
-  u_blobScale: number;           // noise frequency (higher = smaller detail)
+  u_blobScale: number;           // noise frequency (↑ = smaller details)
   u_blobThreshold: number;       // fill level (lower = more filled)
   u_blobEdge: number;            // edge softness
   u_blobPulse: number;           // subtle wobble amount
@@ -29,31 +31,25 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     u_mouse:         { value: new THREE.Vector2(-10, -10) },
     u_mouseWorld:    { value: new THREE.Vector3(0, 0, 0) },
 
-    // subtle neon brightness
     u_intensity:     { value: 0.38 },
     u_rippleColor:   { value: new THREE.Color(1.0, 1.0, 1.0) },
 
-    // locality: how far from the cursor the effect can appear (softly)
-    u_radius:        { value: 0.26 },     // kept for compat
+    u_radius:        { value: 0.26 },   // compat
     u_worldRadiusMul:{ value: 2.8 },
 
-    // facet (crystal) shimmer you liked at 0.05
     u_triScale:      { value: 0.05 },
     u_triSharp:      { value: 0.20 },
 
-    // blob (random shape) parameters
     u_blobScale:     { value: 4.0 },
     u_blobThreshold: { value: 0.56 },
     u_blobEdge:      { value: 0.16 },
     u_blobPulse:     { value: 0.12 },
 
-    // not used now but kept for toggles/future
     u_sigma:         { value: 0.07 },
     u_speed:         { value: 0.55 },
 
-    // debug & mode
     u_baseColor:     { value: new THREE.Color(0.10, 0.10, 0.10) },
-    u_useUV:         { value: 0.0 },  // ← always world mode
+    u_useUV:         { value: 0.0 },    // ← world mode
     u_mode:          { value: 0 },
   };
 
@@ -91,7 +87,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
 
     uniform int   u_mode;
 
-    // --- small hash/noise helpers ---
+    // hash / value noise / fbm
     float hash21(vec2 p){
       p = fract(p*vec2(123.34, 345.45));
       p += dot(p, p+34.345);
@@ -112,7 +108,7 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
       return s;
     }
 
-    // triangular facet signal
+    // triangular facets
     mat2 rot(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
     float triSignal(vec2 p, float freq){
       vec2 d0 = vec2(1.,0.);
@@ -151,31 +147,31 @@ export function createOverlayRipple(initial?: Partial<RippleUniforms>) {
     }
 
     void main(){
-      // locality falloff (soft, no obvious circle)
+      // soft locality (not a hard circle)
       float distW = length(vWorldPos - u_mouseWorld);
       float soft  = 1.0 - smoothstep(u_worldRadiusMul*0.7, u_worldRadiusMul, distW);
 
-      // triplanar FBM blob around cursor
+      // triplanar FBM blob at cursor
       float n = blobTriplanar(vWorldPos, vWorldNormal, u_mouseWorld, u_blobScale);
 
       // animated threshold (gentle breathing)
       float pulse = u_blobPulse * sin(u_time*2.0 + n*6.28318);
       float th = clamp(u_blobThreshold + pulse, 0.0, 1.0);
 
-      // anti-aliased edge
+      // AA threshold
       float fw = fwidth(n) * 2.0 + 1e-5;
       float blob = smoothstep(th - u_blobEdge - fw, th + u_blobEdge + fw, n);
 
-      // crystalline modulation (subtle)
+      // crystalline modulation
       float facet = triTriplanar(vWorldPos, vWorldNormal, u_triScale);
       facet = mix(1.0, facet, 0.35);
 
       float amt = blob * facet * soft * u_intensity;
 
-      // optional diagnostics
-      if (u_mode == 4) { gl_FragColor = vec4(vec3(n), 1.0); return; }     // raw noise
-      if (u_mode == 5) { gl_FragColor = vec4(vec3(blob), 1.0); return; }  // thresholded blob
-      if (u_mode == 6) { gl_FragColor = vec4(vec3(soft), 1.0); return; }  // locality mask
+      // diagnostics
+      if (u_mode == 4) { gl_FragColor = vec4(vec3(n), 1.0); return; }
+      if (u_mode == 5) { gl_FragColor = vec4(vec3(blob), 1.0); return; }
+      if (u_mode == 6) { gl_FragColor = vec4(vec3(soft), 1.0); return; }
 
       // additive overlay
       gl_FragColor = vec4(u_rippleColor * amt, amt);
