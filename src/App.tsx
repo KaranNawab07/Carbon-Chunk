@@ -20,7 +20,8 @@ export default function App() {
         }}
       >
         Hover the model: ripple should follow the cursor. Press 1-6 for debug modes.
-      </div>
+      </Canvas>
+    </div>
       <Canvas 
         dpr={[1, 2]} 
         onCreated={({ gl }) => {
@@ -35,5 +36,4 @@ export default function App() {
     </div>
   );
 }
-  )
 }
